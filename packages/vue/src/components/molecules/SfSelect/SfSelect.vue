@@ -153,7 +153,7 @@ export default {
      * Lock body scroll when dropdown is show
      */
     shouldLockScrollOnOpen: {
-      type: boolean,
+      type: Boolean,
       default: false,
     },
   },
