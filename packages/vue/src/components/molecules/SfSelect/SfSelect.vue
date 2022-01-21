@@ -42,6 +42,7 @@
         <div v-show="open" role="list" class="sf-select__dropdown">
           <!--  sf-select__option -->
           <ul
+            ref="scrollableList"
             :aria-expanded="open.toString()"
             :style="{ maxHeight }"
             class="sf-select__options"
@@ -80,6 +81,11 @@ import SfOverlay from "../../atoms/SfOverlay/SfOverlay.vue";
 import { focus } from "../../../utilities/directives";
 import { clickOutside } from "../../../utilities/directives";
 import Vue from "vue";
+import {
+  disableBodyScroll,
+  enableBodyScroll,
+  clearAllBodyScrollLocks,
+} from "body-scroll-lock";
 Vue.component("SfSelectOption", SfSelectOption);
 export default {
   name: "SfSelect",
@@ -143,6 +149,13 @@ export default {
       type: String,
       default: "This field is not correct.",
     },
+    /**
+     * Lock body scroll when dropdown is show
+     */
+    shouldLockScrollOnOpen: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -191,6 +204,14 @@ export default {
             this.optionHeight = this.$slots.default[0].elm.offsetHeight;
           });
         }
+
+        this.toggleBodyScrollLock();
+      },
+    },
+    shouldLockScrollOnOpen: {
+      immediate: true,
+      handler: function () {
+        this.toggleBodyScrollLock();
       },
     },
   },
@@ -215,6 +236,7 @@ export default {
   },
   beforeDestroy: function () {
     this.$off("update", this.update);
+    this.enableBodyScroll();
   },
   methods: {
     update(index) {
@@ -248,6 +270,29 @@ export default {
     },
     closeHandler() {
       this.open = false;
+    },
+    enableBodyScroll() {
+      const scrollableContainer = this.$refs["scrollableList"];
+
+      if (!scrollableContainer) {
+        clearAllBodyScrollLocks();
+        return;
+      }
+
+      enableBodyScroll(scrollableContainer);
+    },
+    toggleBodyScrollLock() {
+      const scrollableContainer = this.$refs["scrollableList"];
+
+      if (!scrollableContainer) {
+        return;
+      }
+
+      if (this.open && this.shouldLockScrollOnOpen) {
+        disableBodyScroll(scrollableContainer);
+      } else {
+        enableBodyScroll(scrollableContainer);
+      }
     },
   },
 };
