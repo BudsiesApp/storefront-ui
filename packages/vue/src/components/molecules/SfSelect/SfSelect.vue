@@ -149,6 +149,13 @@ export default {
       type: String,
       default: "This field is not correct.",
     },
+    /**
+     * Lock body scroll when dropdown is show
+     */
+    shouldLockScrollOnOpen: {
+      type: boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -198,19 +205,12 @@ export default {
           });
         }
 
-        const scrollableContainer = this.$refs["scrollableList"];
-
-        if (!scrollableContainer) {
-          return;
-        }
-
-        if (visible) {
-          // && isMobile
-          disableBodyScroll(scrollableContainer);
-        } else {
-          enableBodyScroll(scrollableContainer);
-        }
+        this.toggleBodyScrollLock();
       },
+    },
+    shouldLockScrollOnOpen: {
+      immediate: true,
+      handler: this.toggleBodyScrollLock(),
     },
   },
   created: function () {},
@@ -234,6 +234,7 @@ export default {
   },
   beforeDestroy: function () {
     this.$off("update", this.update);
+    this.enableBodyScroll();
   },
   methods: {
     update(index) {
@@ -267,6 +268,29 @@ export default {
     },
     closeHandler() {
       this.open = false;
+    },
+    enableBodyScroll() {
+      const scrollableContainer = this.$refs["scrollableList"];
+
+      if (!scrollableContainer) {
+        clearAllBodyScrollLocks();
+        return;
+      }
+
+      enableBodyScroll(scrollableContainer);
+    },
+    toggleBodyScrollLock() {
+      const scrollableContainer = this.$refs["scrollableList"];
+
+      if (!scrollableContainer) {
+        return;
+      }
+
+      if (this.open && this.shouldLockScrollOnOpen) {
+        disableBodyScroll(scrollableContainer);
+      } else {
+        enableBodyScroll(scrollableContainer);
+      }
     },
   },
 };
