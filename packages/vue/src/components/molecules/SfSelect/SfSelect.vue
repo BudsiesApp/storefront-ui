@@ -210,7 +210,9 @@ export default {
     },
     shouldLockScrollOnOpen: {
       immediate: true,
-      handler: this.toggleBodyScrollLock(),
+      handler: function () {
+        this.toggleBodyScrollLock();
+      },
     },
   },
   created: function () {},
