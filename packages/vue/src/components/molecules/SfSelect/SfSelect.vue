@@ -42,6 +42,7 @@
         <div v-show="open" role="list" class="sf-select__dropdown">
           <!--  sf-select__option -->
           <ul
+            ref="scrollableList"
             :aria-expanded="open.toString()"
             :style="{ maxHeight }"
             class="sf-select__options"
@@ -80,6 +81,11 @@ import SfOverlay from "../../atoms/SfOverlay/SfOverlay.vue";
 import { focus } from "../../../utilities/directives";
 import { clickOutside } from "../../../utilities/directives";
 import Vue from "vue";
+import {
+  disableBodyScroll,
+  enableBodyScroll,
+  clearAllBodyScrollLocks,
+} from "body-scroll-lock";
 Vue.component("SfSelectOption", SfSelectOption);
 export default {
   name: "SfSelect",
@@ -190,6 +196,19 @@ export default {
           this.$nextTick(() => {
             this.optionHeight = this.$slots.default[0].elm.offsetHeight;
           });
+        }
+
+        const scrollableContainer = this.$refs["scrollableList"];
+
+        if (!scrollableContainer) {
+          return;
+        }
+
+        if (visible) {
+          // && isMobile
+          disableBodyScroll(scrollableContainer);
+        } else {
+          enableBodyScroll(scrollableContainer);
         }
       },
     },
