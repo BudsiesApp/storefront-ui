@@ -3,8 +3,14 @@ import Vue from "vue";
 
 export const focusTrap = {
   bind(el) {
-    Vue.nextTick(() => {
+    const updateFocusTrapDirectiveData = () => {
       el._focusableChildrenElements = getFocusableChildren(el);
+    };
+
+    el.updateFocusTrapDirectiveData = updateFocusTrapDirectiveData;
+
+    Vue.nextTick(() => {
+      el.updateFocusTrapDirectiveData();
     });
     el._keyHandler = function (e) {
       if (e.key === "Tab") {
@@ -18,7 +24,7 @@ export const focusTrap = {
   },
   componentUpdated(el) {
     Vue.nextTick(() => {
-      el._focusableChildrenElements = getFocusableChildren(el);
+      el.updateFocusTrapDirectiveData();
     });
   },
   unbind(el) {

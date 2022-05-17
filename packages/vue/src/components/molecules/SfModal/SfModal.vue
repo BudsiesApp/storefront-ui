@@ -9,7 +9,12 @@
     >
     </SfOverlay>
     <transition :name="transitionModal">
-      <div v-if="visible" v-focus-trap class="sf-modal__container">
+      <div
+        v-if="visible"
+        ref="modalContainer"
+        v-focus-trap
+        class="sf-modal__container"
+      >
         <!--@slot Use this slot to place content inside the modal bar.-->
         <slot name="modal-bar">
           <SfBar
@@ -154,6 +159,15 @@ export default {
       if (this.className !== this.$vnode.data.class) {
         this.className = this.$vnode.data.class;
       }
+    },
+    updateDirectivesData() {
+      const modalContainer = this.$refs.modalContainer;
+
+      if (!modalContainer) {
+        return;
+      }
+
+      modalContainer.$el.updateFocusTrapDirectiveData();
     },
   },
 };
