@@ -167,7 +167,7 @@ export default {
         return;
       }
 
-      modalContainer.$el.updateFocusTrapDirectiveData();
+      modalContainer.updateFocusTrapDirectiveData();
     },
   },
 };
