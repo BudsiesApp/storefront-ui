@@ -7,7 +7,7 @@
       </div>
     </button>
     <transition name="fade">
-      <div v-if="open" class="sf-footer-column__content">
+      <div v-show="open" class="sf-footer-column__content">
         <slot />
       </div>
     </transition>
