@@ -7,7 +7,7 @@
       </div>
     </button>
     <transition name="fade">
-      <div v-if="open" class="sf-footer-column__content">
+      <div v-show="open" class="sf-footer-column__content">
         <slot />
       </div>
     </transition>
@@ -31,8 +31,9 @@ export default {
       return this.$parent.open.includes(this.title);
     },
   },
-  mounted() {
+  created() {
     this.$parent.items.push(this.title);
+    this.$parent.updateOpen();
   },
   methods: {
     toggle(payload) {
