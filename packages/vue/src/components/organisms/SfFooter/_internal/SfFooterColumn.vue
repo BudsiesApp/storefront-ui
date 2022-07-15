@@ -39,5 +39,9 @@ export default {
       this.$parent.toggle(payload);
     },
   },
+  serverPrefetch() {
+    this.$parent.items.push(this.title);
+    this.$parent.updateOpen();
+  },
 };
 </script>

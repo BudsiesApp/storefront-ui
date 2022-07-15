@@ -39,9 +39,9 @@ export default {
   },
   watch: {
     isMobile: {
-      handler(mobile) {
+      handler() {
         this.$nextTick(() => {
-          this.open = mobile ? [] : [...this.items];
+          this.updateOpen();
         });
       },
       immediate: true,
@@ -61,6 +61,9 @@ export default {
         this.open.push(payload);
       }
       this.$emit("change", this.open);
+    },
+    updateOpen() {
+      this.open = this.isMobile ? [] : [...this.items];
     },
   },
 };
