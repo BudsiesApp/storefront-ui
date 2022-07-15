@@ -31,17 +31,14 @@ export default {
       return this.$parent.open.includes(this.title);
     },
   },
-  mounted() {
+  created() {
     this.$parent.items.push(this.title);
+    this.$parent.updateOpen();
   },
   methods: {
     toggle(payload) {
       this.$parent.toggle(payload);
     },
-  },
-  serverPrefetch() {
-    this.$parent.items.push(this.title);
-    this.$parent.updateOpen();
   },
 };
 </script>
