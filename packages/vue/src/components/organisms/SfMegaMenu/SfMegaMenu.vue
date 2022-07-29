@@ -1,6 +1,6 @@
 <template>
   <transition name="fade">
-    <div v-if="visible" class="sf-mega-menu">
+    <div v-show="visible" class="sf-mega-menu">
       <SfBar
         :title="title"
         :back="isActive"
