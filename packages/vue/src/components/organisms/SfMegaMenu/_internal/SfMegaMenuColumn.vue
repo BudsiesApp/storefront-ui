@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isActive" class="sf-mega-menu-column">
+  <div v-show="isActive" class="sf-mega-menu-column">
     <!-- @slot Custom title markup -->
     <slot name="title" v-bind="{ title }">
       <h3 class="sf-mega-menu-column__title">{{ title }}</h3>
