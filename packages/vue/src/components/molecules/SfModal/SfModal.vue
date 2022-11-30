@@ -48,7 +48,7 @@ import SfBar from "../../molecules/SfBar/SfBar.vue";
 import SfOverlay from "../../atoms/SfOverlay/SfOverlay.vue";
 import SfIcon from "../../atoms/SfIcon/SfIcon.vue";
 import SfButton from "../../atoms/SfButton/SfButton.vue";
-import { disableBodyScroll, clearAllBodyScrollLocks } from "body-scroll-lock";
+import { enableBodyScroll, disableBodyScroll, clearAllBodyScrollLocks } from "body-scroll-lock";
 import { focusTrap } from "../../../utilities/directives";
 import { isClient } from "../../../utilities/helpers";
 export default {
@@ -131,12 +131,24 @@ export default {
           });
           document.addEventListener("keydown", this.keydownHandler);
         } else {
-          clearAllBodyScrollLocks();
+          if (this.$ref.content) {
+            enableBodyScroll(this.$refs.content);
+          } else {
+            clearAllBodyScrollLocks();
+          }
+
           document.removeEventListener("keydown", this.keydownHandler);
         }
       },
       immediate: true,
     },
+  },
+  beforeDestroy() {
+    if (this.$ref.content) {
+      enableBodyScroll(this.$refs.content);
+    } else {
+      clearAllBodyScrollLocks();
+    }
   },
   methods: {
     close() {
