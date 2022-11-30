@@ -131,7 +131,7 @@ export default {
           });
           document.addEventListener("keydown", this.keydownHandler);
         } else {
-          if (this.$ref.content) {
+          if (this.$refs.content) {
             enableBodyScroll(this.$refs.content);
           } else {
             clearAllBodyScrollLocks();
@@ -144,7 +144,7 @@ export default {
     },
   },
   beforeDestroy() {
-    if (this.$ref.content) {
+    if (this.$refs.content) {
       enableBodyScroll(this.$refs.content);
     } else {
       clearAllBodyScrollLocks();
