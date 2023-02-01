@@ -217,22 +217,15 @@ export default {
   },
   created: function () {},
   mounted: function () {
-    const options = [];
-    const indexes = {};
-    let i = 0;
-    if (!this.$slots.default) return;
-    this.$on("update", this.update);
-    this.$slots.default.forEach((slot) => {
-      if (!slot.tag) return;
-      options.push({
-        ...slot.componentOptions.propsData,
-        html: slot.elm.innerHTML,
-      });
-      indexes[JSON.stringify(slot.componentOptions.propsData.value)] = i;
-      i++;
-    });
-    this.options = options;
-    this.indexes = indexes;
+    this.addOptionsAndIndexes();
+  },
+  updated() {
+    if (
+      this.$slots.default &&
+      this.$slots.default.length > this.options.length
+    ) {
+      this.addOptionsAndIndexes();
+    }
   },
   beforeDestroy: function () {
     this.$off("update", this.update);
@@ -241,6 +234,25 @@ export default {
   methods: {
     update(index) {
       this.index = index;
+    },
+    addOptionsAndIndexes () {
+      const options = [];
+      const indexes = {};
+
+      if (!this.$slots.default) return;
+
+      this.$on("update", this.update);
+      this.$slots.default.forEach(({ tag, componentOptions, elm }, index) => {
+        if (!tag) return;
+        options.push({
+          ...componentOptions.propsData,
+          html: elm.innerHTML,
+        });
+        indexes[JSON.stringify(componentOptions.propsData.value)] = index;
+      });
+
+      this.options = options;
+      this.indexes = indexes;
     },
     move(payload) {
       const optionsLength = this.options.length;
