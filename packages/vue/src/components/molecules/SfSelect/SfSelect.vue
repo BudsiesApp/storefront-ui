@@ -87,6 +87,7 @@ import {
   clearAllBodyScrollLocks,
 } from "body-scroll-lock";
 Vue.component("SfSelectOption", SfSelectOption);
+const maxAvailableHeightCoefficient = 0.6;
 export default {
   name: "SfSelect",
   directives: { focus, clickOutside },
@@ -164,6 +165,7 @@ export default {
       indexes: {},
       optionHeight: 0,
       focusedOption: "",
+      maxAvailableHeight: 0,
     };
   },
   computed: {
@@ -186,7 +188,11 @@ export default {
     },
     maxHeight() {
       if (!this.size) return;
-      return `${this.optionHeight * this.size}px`;
+
+      return `${Math.min(
+        this.optionHeight * this.size,
+        this.maxAvailableHeight
+      )}px`;
     },
     isActive() {
       return this.open;
@@ -202,6 +208,8 @@ export default {
         if (visible) {
           this.$nextTick(() => {
             this.optionHeight = this.$slots.default[0].elm.offsetHeight;
+            this.maxAvailableHeight =
+              document.body.clientHeight * maxAvailableHeightCoefficient;
           });
         }
 
@@ -235,7 +243,7 @@ export default {
     update(index) {
       this.index = index;
     },
-    addOptionsAndIndexes () {
+    addOptionsAndIndexes() {
       const options = [];
       const indexes = {};
 
