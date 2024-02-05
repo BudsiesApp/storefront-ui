@@ -101,10 +101,17 @@ export default {
       return this.isSFSizes ? `size-${this.size.trim()}` : "";
     },
     iconCustomStyle() {
-      return {
-        "--icon-color": !this.isSFColors ? this.color : "",
-        "--icon-size": !this.isSFSizes ? this.size : "",
-      };
+      const style = {};
+
+      if (this.color && !this.isSFColors) {
+        style["--icon-color"] = this.color;
+      }
+
+      if (this.size && !this.isSFSizes) {
+        style["--icon-size"] = this.size;
+      }
+
+      return style;
     },
     isSFIcons() {
       return SF_ICONS.includes(this.icon.trim());
