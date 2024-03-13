@@ -7,6 +7,10 @@
 <script>
 import Vue from "vue";
 import SfTab from "./_internal/SfTab.vue";
+import {
+  mapMobileObserver,
+  unMapMobileObserver,
+} from "../../../utilities/mobile-observer";
 Vue.component("SfTab", SfTab);
 
 export default {
@@ -33,9 +37,16 @@ export default {
       default: "hide",
     },
   },
+  computed: {
+    ...mapMobileObserver()
+  },
   mounted() {
     this.$on("toggle", this.toggle);
     if (this.openTab) this.openChild();
+  },
+  beforeDestroy() {
+    this.$off("toggle", this.toggle);
+    this.unMapMobileObserver();
   },
   methods: {
     toggle(id) {
@@ -50,6 +61,9 @@ export default {
         this.$children[this.openTab - 1].isActive = true;
       }
     },
+    hasOpenedChild() {
+      return this.$children.some((child) => child.isActive)
+    }
   },
   provide: function () {
     const tabConfig = {};
@@ -66,6 +80,15 @@ export default {
       tabConfig,
     };
   },
+  watch: {
+    isMobile(val) {
+      if (val || this.hasOpenedChild()) {
+        return;
+      }
+
+      this.openChild();
+    }
+  }
 };
 </script>
 <style lang="scss">
