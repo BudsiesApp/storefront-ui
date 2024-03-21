@@ -46,7 +46,7 @@ export default {
   },
   beforeDestroy() {
     this.$off("toggle", this.toggle);
-    this.unMapMobileObserver();
+    unMapMobileObserver();
   },
   methods: {
     toggle(id) {
