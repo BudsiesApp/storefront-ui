@@ -1,10 +1,6 @@
 <template>
-  <div class="sf-step">
-    <slot
-      v-if="active || useVShow"
-      v-show="active || !useVShow"
-      :index="index"
-    ></slot>
+  <div  class="sf-step" v-show="active || !useVShow">
+    <slot v-if="active || useVShow" :index="index"></slot>
   </div>
 </template>
 <script>
