@@ -1,6 +1,10 @@
 <template>
   <div class="sf-step">
-    <slot v-if="active" :index="index"></slot>
+    <slot
+      v-if="active || useVShow"
+      v-show="active || !useVShow"
+      :index="index"
+    ></slot>
   </div>
 </template>
 <script>
@@ -14,6 +18,13 @@ export default {
     name: {
       type: String,
       default: "",
+    },
+    /**
+     * Use `v-show` instead `v-if` directive for hide inactive steps content
+     */
+    useVShow: {
+      type: Boolean,
+      default: false,
     },
   },
   computed: {
