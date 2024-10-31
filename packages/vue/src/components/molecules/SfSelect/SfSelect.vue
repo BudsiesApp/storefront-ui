@@ -10,6 +10,7 @@
       'sf-select--is-selected': isSelected,
       'sf-select--is-required': required,
       'sf-select--is-disabled': disabled,
+      'sf-select--is-flipped': isFlipped
     }"
     class="sf-select"
     @click="toggle($event)"
@@ -37,7 +38,7 @@
       <slot name="icon">
         <SfChevron class="sf-select__chevron" />
       </slot>
-      <SfOverlay :visible="open" class="sf-select__overlay mobile-only" />
+
       <transition name="sf-select">
         <div v-show="open" role="list" class="sf-select__dropdown">
           <!--  sf-select__option -->
@@ -50,13 +51,6 @@
             <slot />
           </ul>
           <slot name="cancel">
-            <SfButton
-              ref="cancel"
-              class="sf-select__cancel sf-button--full-width mobile-only"
-              @click="closeHandler"
-            >
-              Cancel
-            </SfButton>
           </slot>
         </div>
       </transition>
@@ -74,20 +68,25 @@
   </div>
 </template>
 <script>
-import SfSelectOption from "./_internal/SfSelectOption.vue";
-import SfChevron from "../../atoms/SfChevron/SfChevron.vue";
-import SfButton from "../../atoms/SfButton/SfButton.vue";
-import SfOverlay from "../../atoms/SfOverlay/SfOverlay.vue";
-import { focus } from "../../../utilities/directives";
-import { clickOutside } from "../../../utilities/directives";
 import Vue from "vue";
 import {
   disableBodyScroll,
   enableBodyScroll,
   clearAllBodyScrollLocks,
 } from "body-scroll-lock";
+
+import SfSelectOption from "./_internal/SfSelectOption.vue";
+import SfChevron from "../../atoms/SfChevron/SfChevron.vue";
+import SfButton from "../../atoms/SfButton/SfButton.vue";
+import SfOverlay from "../../atoms/SfOverlay/SfOverlay.vue";
+import { focus } from "../../../utilities/directives";
+import { clickOutside } from "../../../utilities/directives";
+import { mapMobileObserver, unMapMobileObserver } from '../../../utilities/mobile-observer';
+
 Vue.component("SfSelectOption", SfSelectOption);
+
 const maxAvailableHeightCoefficient = 0.6;
+
 export default {
   name: "SfSelect",
   directives: { focus, clickOutside },
@@ -161,6 +160,7 @@ export default {
   data() {
     return {
       open: false,
+      isFlipped: false,
       options: [],
       indexes: {},
       optionHeight: 0,
@@ -169,6 +169,7 @@ export default {
     };
   },
   computed: {
+    ...mapMobileObserver(),
     index: {
       get() {
         const stringified = this.indexes[JSON.stringify(this.selected)];
@@ -186,13 +187,18 @@ export default {
       if (this.index < 0) return;
       return this.options[this.index].html;
     },
-    maxHeight() {
+    maxHeightValue() {
       if (!this.size) return;
 
-      return `${Math.min(
+      return Math.min(
         this.optionHeight * this.size,
         this.maxAvailableHeight
-      )}px`;
+      );
+    },
+    maxHeight() {
+      if (!this.maxHeightValue) return;
+      
+      return `${this.maxHeightValue}px`;
     },
     isActive() {
       return this.open;
@@ -201,15 +207,19 @@ export default {
       return this.selected;
     },
   },
+  beforeDestroy() {
+    unMapMobileObserver();
+  },
   watch: {
     open: {
       immediate: true,
       handler: function (visible) {
         if (visible) {
+          const updateMaxAvailableHeightFunction = this.isMobile ? this.updateMaxAvailableHeightForMobile : this.updateMaxAvailableHeightForDesktop;
+
           this.$nextTick(() => {
             this.optionHeight = this.$slots.default[0].elm.offsetHeight;
-            this.maxAvailableHeight =
-              document.body.clientHeight * maxAvailableHeightCoefficient;
+            updateMaxAvailableHeightFunction()
           });
         }
 
@@ -240,6 +250,16 @@ export default {
     this.enableBodyScroll();
   },
   methods: {
+    updateMaxAvailableHeightForMobile() {
+      const rect = this.$el.getBoundingClientRect()
+      const bottomHeight = document.body.clientHeight - rect.bottom;
+
+      this.maxAvailableHeight = Math.max(bottomHeight, rect.top);
+      this.isFlipped = rect.top > bottomHeight && bottomHeight < this.maxHeightValue;
+    },
+    updateMaxAvailableHeightForDesktop() {
+      this.maxAvailableHeight = document.body.clientHeight * maxAvailableHeightCoefficient;
+    },
     update(index) {
       this.index = index;
     },
