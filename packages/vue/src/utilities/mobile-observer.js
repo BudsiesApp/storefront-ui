@@ -37,7 +37,7 @@ export const mapMobileObserver = () => {
       isInitialized: false,
     });
   }
-  observer.clients += 1;
+
   return {
     isMobile: {
       get() {
@@ -60,13 +60,5 @@ export const mapMobileObserver = () => {
   };
 };
 export const unMapMobileObserver = () => {
-  if (observer) {
-    observer.clients -= 1;
-    if (observer.clients === 0) {
-      observer = null;
-      tearDownListener();
-    }
-  } else {
-    tearDownListener();
-  }
+  // TODO: destroy observer when observer initialization will be fixed
 };
