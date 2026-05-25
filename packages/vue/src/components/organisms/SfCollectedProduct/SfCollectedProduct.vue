@@ -1,25 +1,34 @@
 <template>
   <div class="sf-collected-product">
-    <div class="sf-collected-product__main">
-      <div class="sf-collected-product__details">
-        <slot name="title" v-bind="{ title }">
-          <div class="sf-collected-product__title-wraper">
-            <SfLink :link="link" class="sf-collected-product__title">
-              {{ title }}
-            </SfLink>
-          </div>
-        </slot>
-        <slot name="price" v-bind="{ specialPrice, regularPrice }">
-          <SfPrice
-            v-if="regularPrice"
-            :regular="regularPrice"
-            :special="specialPrice"
-          />
-        </slot>
-        <slot name="configuration" />
+    <div class="sf-collected-product__content">
+      <div class="sf-collected-product__main">
+        <div class="sf-collected-product__details">
+          <slot name="title" v-bind="{ title }">
+            <div class="sf-collected-product__title-wraper">
+              <SfLink :link="link" class="sf-collected-product__title">
+                {{ title }}
+              </SfLink>
+            </div>
+          </slot>
+          <slot name="price" v-bind="{ specialPrice, regularPrice }">
+            <SfPrice
+              v-if="regularPrice"
+              :regular="regularPrice"
+              :special="specialPrice"
+            />
+          </slot>
+          <slot name="configuration" />
+        </div>
+        <div class="sf-collected-product__actions">
+          <slot name="actions" />
+        </div>
       </div>
-      <div class="sf-collected-product__actions">
-        <slot name="actions" />
+
+      <div
+        v-if="$slots.bottom || $scopedSlots.bottom"
+        class="sf-collected-product__bottom"
+      >
+        <slot name="bottom" />
       </div>
     </div>
     <div class="sf-collected-product__aside">

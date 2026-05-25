@@ -58,9 +58,13 @@
     --quantity-selector-width: 100%;
     --quantity-selector-height: 2.5rem;
   }
-  &__main {
+  &__content {
     flex: 1;
     margin: var(--collected-product-main-margin, 0 0 0 var(--spacer-base));
+    display: flex;
+    flex-direction: column;
+  }
+  &__main {
     display: flex;
     flex-direction: var(--collected-product-main-flex-direction, column);
   }
@@ -68,6 +72,9 @@
   &__actions {
     display: flex;
     flex-direction: column;
+  }
+  &__bottom {
+    margin-top: var(--collected-product-bottom-margin, var(--spacer-sm));
   }
   &__title {
     display: inline-block;
@@ -144,3 +151,4 @@
     }
   }
 }
+
