@@ -69,6 +69,7 @@
   &__main-top {
     display: flex;
     flex-direction: var(--collected-product-main-flex-direction, row);
+    justify-content: space-between;
   }
   &__details,
   &__actions {
