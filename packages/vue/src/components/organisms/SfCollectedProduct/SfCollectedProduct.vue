@@ -21,7 +21,7 @@
 
         </div>
 
-        <div class="sf-collected-product__actions">
+        <div class="sf-collected-product__actions desktop-only">
           <slot name="actions" />
         </div>
 
@@ -40,6 +40,10 @@
       </div>
 
       <slot name="configuration" />
+
+      <div class="sf-collected-product__actions mobile-only">
+        <slot name="actions" />
+      </div>
     </div>
 
     <div class="sf-collected-product__aside">

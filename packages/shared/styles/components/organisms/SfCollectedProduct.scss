@@ -1,5 +1,7 @@
 @import "../../helpers";
 .sf-collected-product {
+  --collected-product-main-flex-direction: row;
+
   position: relative;
   box-sizing: border-box;
   display: flex;
@@ -66,7 +68,7 @@
   }
   &__main-top {
     display: flex;
-    flex-direction: var(--collected-product-main-flex-direction, column);
+    flex-direction: var(--collected-product-main-flex-direction, row);
   }
   &__details,
   &__actions {
@@ -140,7 +142,6 @@
       --collected-product-remove-right: var(--spacer-xs);
       --collected-product-remove-text-display: inline;
       --collected-product-actions-justify-content: flex-start;
-      --collected-product-main-flex-direction: row;
       --collected-product-actions-align-items: flex-start;
       &:hover {
         --collected-product-box-shadow: none;
