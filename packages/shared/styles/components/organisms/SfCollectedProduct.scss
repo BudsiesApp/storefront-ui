@@ -62,9 +62,9 @@
     flex: 1;
     display: flex;
     flex-direction: column;
+    margin: var(--collected-product-main-margin, 0 0 0 var(--spacer-base));
   }
   &__main-top {
-    margin: var(--collected-product-main-margin, 0 0 0 var(--spacer-base));
     display: flex;
     flex-direction: var(--collected-product-main-flex-direction, column);
   }
