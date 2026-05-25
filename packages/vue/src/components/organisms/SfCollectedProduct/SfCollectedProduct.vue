@@ -1,53 +1,47 @@
 <template>
   <div class="sf-collected-product">
-    <div class="sf-collected-product__content">
-      <div class="sf-collected-product__top">
-        <div class="sf-collected-product__main">
-          <div class="sf-collected-product__details">
-            <slot name="title" v-bind="{ title }">
-              <div class="sf-collected-product__title-wraper">
-                <SfLink :link="link" class="sf-collected-product__title">
-                  {{ title }}
-                </SfLink>
-              </div>
-            </slot>
-            <slot name="price" v-bind="{ specialPrice, regularPrice }">
-              <SfPrice
-                v-if="regularPrice"
-                :regular="regularPrice"
-                :special="specialPrice"
-              />
-            </slot>
-            <slot name="configuration" />
-          </div>
-          <div class="sf-collected-product__actions">
-            <slot name="actions" />
-          </div>
-        </div>
-
-        <div class="sf-collected-product__remove-slot">
-          <slot name="remove" v-bind="{ removeHandler }">
-            <SfCircleIcon
-              icon="cross"
-              aria-label="Remove"
-              class="sf-circle-icon--small sf-collected-product__remove sf-collected-product__remove--circle-icon"
-            />
-            <SfButton
-              class="sf-button--text sf-collected-product__remove sf-collected-product__remove--text"
-              @click="removeHandler"
-              >Remove</SfButton
-            >
+    <div class="sf-collected-product__main">
+      <div class="sf-collected-product__main-top">
+        <div class="sf-collected-product__details">
+          <slot name="title" v-bind="{ title }">
+            <div class="sf-collected-product__title-wraper">
+              <SfLink :link="link" class="sf-collected-product__title">
+                {{ title }}
+              </SfLink>
+            </div>
           </slot>
+
+          <slot name="price" v-bind="{ specialPrice, regularPrice }">
+            <SfPrice
+              v-if="regularPrice"
+              :regular="regularPrice"
+              :special="specialPrice"
+            />
+          </slot>
+
         </div>
+
+        <div class="sf-collected-product__actions">
+          <slot name="actions" />
+        </div>
+
+        <slot name="remove" v-bind="{ removeHandler }">
+          <SfCircleIcon
+            icon="cross"
+            aria-label="Remove"
+            class="sf-circle-icon--small sf-collected-product__remove sf-collected-product__remove--circle-icon"
+          />
+          <SfButton
+            class="sf-button--text sf-collected-product__remove sf-collected-product__remove--text"
+            @click="removeHandler"
+            >Remove</SfButton
+          >
+        </slot>
       </div>
 
-      <div
-        v-if="$slots.bottom || $scopedSlots.bottom"
-        class="sf-collected-product__bottom"
-      >
-        <slot name="bottom" />
-      </div>
+      <slot name="configuration" />
     </div>
+
     <div class="sf-collected-product__aside">
       <slot name="image" v-bind="{ image, title }">
         <SfImage
@@ -58,6 +52,7 @@
           class="sf-collected-product__image"
         />
       </slot>
+
       <slot name="input">
         <div class="sf-collected-product__quantity-wrapper">
           <SfQuantitySelector
@@ -68,6 +63,20 @@
         </div>
       </slot>
     </div>
+
+    <slot name="remove" v-bind="{ removeHandler }">
+      <SfCircleIcon
+        icon="cross"
+        aria-label="Remove"
+        class="sf-circle-icon--small sf-collected-product__remove sf-collected-product__remove--circle-icon"
+      />
+      <SfButton
+        class="sf-button--text sf-collected-product__remove sf-collected-product__remove--text"
+        @click="removeHandler"
+        >Remove</SfButton
+      >
+    </slot>
+
     <slot name="more-actions">
       <SfButton
         aria-label="More actions"
