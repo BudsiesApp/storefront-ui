@@ -64,7 +64,11 @@
     display: flex;
     flex-direction: column;
   }
+  &__top {
+    display: flex;
+  }
   &__main {
+    flex: 1;
     display: flex;
     flex-direction: var(--collected-product-main-flex-direction, column);
   }
@@ -72,6 +76,11 @@
   &__actions {
     display: flex;
     flex-direction: column;
+  }
+  &__remove-slot {
+    display: flex;
+    flex: 0 0 auto;
+    margin-left: var(--collected-product-remove-slot-margin-left, var(--spacer-sm));
   }
   &__bottom {
     margin-top: var(--collected-product-bottom-margin, var(--spacer-sm));
