@@ -343,7 +343,11 @@ export default {
         if (this.activeIndex >= 0) {
           this.commitSelection(this.activeIndex);
         }
+
         this.closeDropdown();
+        this.$nextTick(() => {
+          document.getElementById(this.triggerId).focus();
+        });
       }
     },
     updateMaxAvailableHeightForMobile() {
