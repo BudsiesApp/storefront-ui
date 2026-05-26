@@ -5,7 +5,7 @@
     class="sf-select-option"
     :class="{ 'sf-select-option--is-active': isActiveOption }"
     :aria-selected="isSelected ? 'true' : 'false'"
-    @click="clicked"
+    @click.stop="clicked"
   >
     <!-- @slot -->
     <slot />
