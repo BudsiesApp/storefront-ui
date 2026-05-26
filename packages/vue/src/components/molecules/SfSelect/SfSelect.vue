@@ -23,6 +23,7 @@
         :aria-controls="listboxId"
         :aria-activedescendant="open && activeIndex >= 0 ? optionId(activeIndex) : undefined"
         :aria-labelledby="label ? labelId : undefined"
+        ref="trigger"
         class="sf-select__selected sf-select-option"
         v-html="html"
         @keydown.up.prevent="move(-1)"
@@ -346,7 +347,7 @@ export default {
 
         this.closeDropdown();
         this.$nextTick(() => {
-          document.getElementById(this.triggerId).focus();
+          this.$refs.trigger.focus();
         });
       }
     },
