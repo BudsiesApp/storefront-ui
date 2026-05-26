@@ -1,10 +1,6 @@
 <template>
   <div
     v-click-outside="closeHandler"
-    :aria-expanded="open.toString()"
-    :aria-owns="'lbox_' + _uid"
-    aria-autocomplete="none"
-    role="combobox"
     :class="{
       'sf-select--is-active': isActive,
       'sf-select--is-selected': isSelected,
@@ -14,23 +10,32 @@
     }"
     class="sf-select"
     @click="toggle($event)"
-    @keyup.esc="closeHandler"
-    @keyup.space="openHandler"
-    @keyup.up="move(-1)"
-    @keyup.down="move(1)"
-    @keyup.enter="enter($event)"
   >
     <div style="position: relative;">
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div
-        id="sfSelect"
+        :id="triggerId"
         v-focus
         tabindex="0"
+        role="combobox"
+        aria-haspopup="listbox"
+        :aria-expanded="open.toString()"
+        :aria-controls="listboxId"
+        :aria-activedescendant="open && activeIndex >= 0 ? optionId(activeIndex) : undefined"
+        :aria-labelledby="label ? labelId : undefined"
         class="sf-select__selected sf-select-option"
         v-html="html"
+        @keydown.up.prevent="move(-1)"
+        @keydown.down.prevent="move(1)"
+        @keydown.home.prevent="moveToFirst"
+        @keydown.end.prevent="moveToLast"
+        @keydown.enter.prevent="enter"
+        @keydown.space.prevent="enter"
+        @keydown.esc.prevent="closeHandler"
+        @keydown.tab="closeHandler"
       ></div>
       <slot name="label">
-        <div v-if="label" class="sf-select__label">
+        <div v-if="label" :id="labelId" class="sf-select__label">
           {{ label }}
         </div>
       </slot>
@@ -39,15 +44,16 @@
       </slot>
 
       <transition name="sf-select">
-        <div 
+        <div
           v-show="open"
-          role="listbox"
           class="sf-select__dropdown"
         >
           <!--  sf-select__option -->
           <ul
+            :id="listboxId"
             ref="scrollableList"
-            :aria-expanded="open.toString()"
+            role="listbox"
+            :aria-labelledby="label ? labelId : undefined"
             :style="{ maxHeight }"
             class="sf-select__options"
           >
@@ -167,24 +173,27 @@ export default {
       options: [],
       indexes: {},
       optionHeight: 0,
-      focusedOption: "",
       maxAvailableHeight: 0,
+      activeIndex: -1,
     };
   },
   computed: {
     ...mapMobileObserver(),
-    index: {
-      get() {
-        const stringified = this.indexes[JSON.stringify(this.selected)];
-        if (typeof stringified === "undefined") {
-          return -1;
-        }
-        return stringified;
-      },
-      set(index) {
-        this.focusedOption = this.options[index].value;
-        this.$emit("change", this.options[index].value);
-      },
+    triggerId() {
+      return `sf-select-trigger-${this._uid}`;
+    },
+    listboxId() {
+      return `sf-select-listbox-${this._uid}`;
+    },
+    labelId() {
+      return `sf-select-label-${this._uid}`;
+    },
+    index() {
+      const stringified = this.indexes[JSON.stringify(this.selected)];
+      if (typeof stringified === "undefined") {
+        return -1;
+      }
+      return stringified;
     },
     html() {
       if (this.index < 0) return;
@@ -200,7 +209,7 @@ export default {
     },
     maxHeight() {
       if (!this.maxHeightValue) return;
-      
+
       return `${this.maxHeightValue}px`;
     },
     isActive() {
@@ -210,19 +219,18 @@ export default {
       return this.selected;
     },
   },
-  beforeDestroy() {
-    unMapMobileObserver();
-  },
   watch: {
     open: {
       immediate: true,
       handler: function (visible) {
         if (visible) {
-          const updateMaxAvailableHeightFunction = this.isMobile ? this.updateMaxAvailableHeightForMobile : this.updateMaxAvailableHeightForDesktop;
+          const updateMaxAvailableHeightFunction = this.isMobile
+            ? this.updateMaxAvailableHeightForMobile
+            : this.updateMaxAvailableHeightForDesktop;
 
           this.$nextTick(() => {
             this.optionHeight = this.$slots.default[0].elm.offsetHeight;
-            updateMaxAvailableHeightFunction()
+            updateMaxAvailableHeightFunction();
           });
         }
 
@@ -251,10 +259,95 @@ export default {
   beforeDestroy: function () {
     this.$off("update", this.update);
     this.enableBodyScroll();
+    unMapMobileObserver();
   },
   methods: {
+    optionId(index) {
+      return `sf-select-option-${this._uid}-${index}`;
+    },
+    commitSelection(index) {
+      if (index >= 0 && index < this.options.length) {
+        this.$emit("change", this.options[index].value);
+      }
+    },
+    openDropdown() {
+      if (this.disabled) {
+        return;
+      }
+
+      this.activeIndex = this.index >= 0 ? this.index : 0;
+      this.open = true;
+      this.$nextTick(() => this.scrollActiveOptionIntoView());
+    },
+    closeDropdown() {
+      this.open = false;
+      this.activeIndex = -1;
+    },
+    scrollActiveOptionIntoView() {
+      if (this.activeIndex < 0) {
+        return;
+      }
+
+      const list = this.$refs.scrollableList;
+
+      if (!list) {
+        return;
+      }
+
+      const option = list.children[this.activeIndex];
+
+      if (!option) {
+        return;
+      }
+
+      option.scrollIntoView({ block: "nearest" });
+    },
+    move(delta) {
+      if (!this.open) {
+        return;
+      }
+
+      let next = this.activeIndex + delta;
+
+      if (next < 0) {
+        next = 0;
+      }
+
+      if (next >= this.options.length) {
+        next = this.options.length - 1;
+      }
+
+      this.activeIndex = next;
+      this.scrollActiveOptionIntoView();
+    },
+    moveToFirst() {
+      if (!this.open) {
+        return;
+      }
+
+      this.activeIndex = 0;
+      this.scrollActiveOptionIntoView();
+    },
+    moveToLast() {
+      if (!this.open) {
+        return;
+      }
+
+      this.activeIndex = this.options.length - 1;
+      this.scrollActiveOptionIntoView();
+    },
+    enter() {
+      if (!this.open) {
+        this.openDropdown();
+      } else {
+        if (this.activeIndex >= 0) {
+          this.commitSelection(this.activeIndex);
+        }
+        this.closeDropdown();
+      }
+    },
     updateMaxAvailableHeightForMobile() {
-      const rect = this.$el.getBoundingClientRect()
+      const rect = this.$el.getBoundingClientRect();
       const bottomHeight = document.body.clientHeight - rect.bottom;
 
       this.maxAvailableHeight = Math.max(bottomHeight, rect.top);
@@ -264,7 +357,8 @@ export default {
       this.maxAvailableHeight = document.body.clientHeight * maxAvailableHeightCoefficient;
     },
     update(index) {
-      this.index = index;
+      this.commitSelection(index);
+      this.closeDropdown();
     },
     addOptionsAndIndexes() {
       const options = [];
@@ -278,25 +372,13 @@ export default {
         options.push({
           ...componentOptions.propsData,
           html: elm.innerHTML,
+          id: this.optionId(index),
         });
         indexes[JSON.stringify(componentOptions.propsData.value)] = index;
       });
 
       this.options = options;
       this.indexes = indexes;
-    },
-    move(payload) {
-      const optionsLength = this.options.length;
-      let index = this.index;
-      index += payload;
-      if (index < 0) index = 0;
-      if (index >= optionsLength) index = optionsLength - 1;
-      this.index = index;
-      document.getElementById("sfSelect").blur();
-      document.getElementById(this.focusedOption).focus();
-    },
-    enter() {
-      this.toggle();
     },
     toggle(event) {
       if (
@@ -306,13 +388,14 @@ export default {
         this.disabled
       )
         return;
-      this.open = !this.open;
-    },
-    openHandler() {
-      this.open = true;
+      if (this.open) {
+        this.closeDropdown();
+      } else {
+        this.openDropdown();
+      }
     },
     closeHandler() {
-      this.open = false;
+      this.closeDropdown();
     },
     enableBodyScroll() {
       const scrollableContainer = this.$refs["scrollableList"];
