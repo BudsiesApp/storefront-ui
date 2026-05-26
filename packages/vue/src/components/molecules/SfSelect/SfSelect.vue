@@ -53,7 +53,6 @@
             :id="listboxId"
             ref="scrollableList"
             role="listbox"
-            :aria-labelledby="resolvedLabelId"
             :style="{ maxHeight }"
             class="sf-select__options"
           >
