@@ -22,8 +22,7 @@
         :aria-expanded="open.toString()"
         :aria-controls="listboxId"
         :aria-activedescendant="open && activeIndex >= 0 ? optionId(activeIndex) : undefined"
-        :aria-labelledby="label ? labelId : undefined"
-        ref="trigger"
+        :aria-labelledby="resolvedLabelId"
         class="sf-select__selected sf-select-option"
         v-html="html"
         @keydown.up.prevent="move(-1)"
@@ -36,7 +35,7 @@
         @keydown.tab="closeHandler"
       ></div>
       <slot name="label">
-        <div v-if="label" :id="labelId" class="sf-select__label">
+        <div v-if="label" :id="internalLabelId" class="sf-select__label">
           {{ label }}
         </div>
       </slot>
@@ -54,7 +53,7 @@
             :id="listboxId"
             ref="scrollableList"
             role="listbox"
-            :aria-labelledby="label ? labelId : undefined"
+            :aria-labelledby="resolvedLabelId"
             :style="{ maxHeight }"
             class="sf-select__options"
           >
@@ -65,7 +64,7 @@
         </div>
       </transition>
     </div>
-    <div v-if="valid !== undefined" class="sf-select__error-message">
+    <div v-if="valid !== undefined" aria-live="polite" class="sf-select__error-message">
       <transition name="fade">
         <div v-if="!valid">
           <!-- @slot Custom error message of form select -->
@@ -160,6 +159,13 @@ export default {
       default: "This field is not correct.",
     },
     /**
+     * Id of an external label element for aria-labelledby
+     */
+    labelId: {
+      type: String,
+      default: "",
+    },
+    /**
      * Lock body scroll when dropdown is show
      */
     shouldLockScrollOnOpen: {
@@ -186,8 +192,11 @@ export default {
     listboxId() {
       return `sf-select-listbox-${this._uid}`;
     },
-    labelId() {
+    internalLabelId() {
       return `sf-select-label-${this._uid}`;
+    },
+    resolvedLabelId() {
+      return this.labelId || (this.label ? this.internalLabelId : undefined);
     },
     index() {
       const stringified = this.indexes[JSON.stringify(this.selected)];
@@ -346,9 +355,6 @@ export default {
         }
 
         this.closeDropdown();
-        this.$nextTick(() => {
-          this.$refs.trigger.focus();
-        });
       }
     },
     updateMaxAvailableHeightForMobile() {
