@@ -50,7 +50,7 @@
         </SfButton>
       </slot>
     </div>
-    <div class="sf-input__error-message">
+    <div aria-live="polite" class="sf-input__error-message">
       <transition name="fade">
         <!-- @slot Custom error message of form input -->
         <slot v-if="!valid" name="error-message" v-bind="{ errorMessage }">
