@@ -17,6 +17,8 @@
         :name="name"
         :class="{ 'sf-input--is-password': isPassword }"
         :type="inputType"
+        :aria-invalid="valid === false ? 'true' : undefined"
+        :aria-describedby="valid === false ? errorMessageId : undefined"
         v-on="listeners"
       />
       <span class="sf-input__bar"></span>
@@ -50,7 +52,7 @@
         </SfButton>
       </slot>
     </div>
-    <div aria-live="polite" class="sf-input__error-message">
+    <div :id="errorMessageId" class="sf-input__error-message">
       <transition name="fade">
         <!-- @slot Custom error message of form input -->
         <slot v-if="!valid" name="error-message" v-bind="{ errorMessage }">
@@ -146,6 +148,9 @@ export default {
     };
   },
   computed: {
+    errorMessageId() {
+      return `sf-input-error-${this._uid}`;
+    },
     listeners() {
       return {
         ...this.$listeners,

@@ -8,7 +8,6 @@
   >
     <label class="sf-radio__container">
       <input
-        v-focus
         type="radio"
         :name="name"
         :value="value"

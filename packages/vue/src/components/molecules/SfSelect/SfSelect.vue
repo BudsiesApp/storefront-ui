@@ -23,6 +23,8 @@
         :aria-controls="listboxId"
         :aria-activedescendant="open && activeIndex >= 0 ? optionId(activeIndex) : undefined"
         :aria-labelledby="resolvedLabelId"
+        :aria-invalid="valid === false ? 'true' : undefined"
+        :aria-describedby="valid === false ? errorMessageId : undefined"
         class="sf-select__selected sf-select-option"
         v-html="html"
         @keydown.up.prevent="move(-1)"
@@ -63,7 +65,7 @@
         </div>
       </transition>
     </div>
-    <div v-if="valid !== undefined" aria-live="polite" class="sf-select__error-message">
+    <div v-if="valid !== undefined" :id="errorMessageId" class="sf-select__error-message">
       <transition name="fade">
         <div v-if="!valid">
           <!-- @slot Custom error message of form select -->
@@ -187,6 +189,9 @@ export default {
     ...mapMobileObserver(),
     triggerId() {
       return `sf-select-trigger-${this._uid}`;
+    },
+    errorMessageId() {
+      return `sf-select-error-${this._uid}`;
     },
     listboxId() {
       return `sf-select-listbox-${this._uid}`;
