@@ -7,6 +7,10 @@
     }"
   >
     <div class="sf-input__wrapper">
+      <label class="sf-input__label" :for="name">
+        <!-- @slot Custom input label -->
+        <slot name="label" v-bind="{ label }">{{ label }}</slot>
+      </label>
       <input
         :id="name"
         v-focus
@@ -19,11 +23,7 @@
         :type="inputType"
         v-on="listeners"
       />
-      <span class="sf-input__bar"></span>
-      <label class="sf-input__label" :for="name">
-        <!-- @slot Custom input label -->
-        <slot name="label" v-bind="{ label }">{{ label }}</slot>
-      </label>
+      <span class="sf-input__bar" aria-hidden></span>
       <slot
         v-if="isPassword"
         v-bind="{
