@@ -7,14 +7,13 @@
     }"
   >
     <div class="sf-input__wrapper">
-      <label class="sf-input__label" :for="name">
+      <label class="sf-input__label" :for="inputId">
         <!-- @slot Custom input label -->
         <slot name="label" v-bind="{ label }">{{ label }}</slot>
       </label>
       <input
-        :id="name"
+        v-bind="inputAttributes"
         v-focus
-        v-bind="$attrs"
         :value="value"
         :required="required"
         :disabled="disabled"
@@ -50,7 +49,11 @@
         </SfButton>
       </slot>
     </div>
-    <div aria-live="polite" class="sf-input__error-message">
+    <div
+      :id="errorMessageId"
+      aria-live="polite"
+      class="sf-input__error-message"
+    >
       <transition name="fade">
         <!-- @slot Custom error message of form input -->
         <slot v-if="!valid" name="error-message" v-bind="{ errorMessage }">
@@ -146,6 +149,37 @@ export default {
     };
   },
   computed: {
+    inputId() {
+      return this.$attrs.id || this.name || `sf-input-${this._uid}`;
+    },
+    errorMessageId() {
+      return `${this.inputId}-error-message`;
+    },
+    describedByIds() {
+      const ids = (this.$attrs["aria-describedby"] || "")
+        .split(" ")
+        .filter(Boolean);
+
+      if (!this.valid) {
+        ids.push(this.errorMessageId);
+      }
+
+      return ids.filter((id, index) => ids.indexOf(id) === index).join(" ") || undefined;
+    },
+    inputAttributes() {
+      const attributes = { ...this.$attrs };
+
+      delete attributes.id;
+      delete attributes["aria-describedby"];
+      delete attributes["aria-invalid"];
+
+      return {
+        ...attributes,
+        id: this.inputId,
+        "aria-describedby": this.describedByIds,
+        "aria-invalid": (!this.valid).toString(),
+      };
+    },
     listeners() {
       return {
         ...this.$listeners,

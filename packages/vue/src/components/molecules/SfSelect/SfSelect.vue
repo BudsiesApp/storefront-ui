@@ -22,6 +22,8 @@
         :aria-expanded="open.toString()"
         :aria-controls="listboxId"
         :aria-activedescendant="open && activeIndex >= 0 ? optionId(activeIndex) : undefined"
+        :aria-describedby="describedByIds"
+        :aria-invalid="valid === undefined ? undefined : (!valid).toString()"
         :aria-labelledby="resolvedLabelId"
         class="sf-select__selected sf-select-option"
         v-html="html"
@@ -63,7 +65,12 @@
         </div>
       </transition>
     </div>
-    <div v-if="valid !== undefined" aria-live="polite" class="sf-select__error-message">
+    <div
+      v-if="valid !== undefined"
+      :id="errorMessageId"
+      aria-live="polite"
+      class="sf-select__error-message"
+    >
       <transition name="fade">
         <div v-if="!valid">
           <!-- @slot Custom error message of form select -->
@@ -188,11 +195,21 @@ export default {
     triggerId() {
       return `sf-select-trigger-${this._uid}`;
     },
+    errorMessageId() {
+      return `${this.triggerId}-error-message`;
+    },
     listboxId() {
       return `sf-select-listbox-${this._uid}`;
     },
     internalLabelId() {
       return `sf-select-label-${this._uid}`;
+    },
+    describedByIds() {
+      if (this.valid !== false) {
+        return undefined;
+      }
+
+      return this.errorMessageId;
     },
     resolvedLabelId() {
       return this.labelId || (this.label ? this.internalLabelId : undefined);
