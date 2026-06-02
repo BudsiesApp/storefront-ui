@@ -66,7 +66,6 @@
       </transition>
     </div>
     <div
-      v-if="valid !== undefined"
       :id="errorMessageId"
       aria-live="polite"
       class="sf-select__error-message"
