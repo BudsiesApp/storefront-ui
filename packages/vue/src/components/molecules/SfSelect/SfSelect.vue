@@ -145,7 +145,7 @@ export default {
      */
     valid: {
       type: Boolean,
-      default: undefined,
+      default: true,
     },
     /**
      * Disabled status of form select
