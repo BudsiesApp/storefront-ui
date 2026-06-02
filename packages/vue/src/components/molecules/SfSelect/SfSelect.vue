@@ -71,12 +71,10 @@
       class="sf-select__error-message"
     >
       <transition name="fade">
-        <div v-if="!valid">
-          <!-- @slot Custom error message of form select -->
-          <slot name="error-message" v-bind="{ errorMessage }">
-            {{ errorMessage }}
-          </slot>
-        </div>
+        <!-- @slot Custom error message of form select -->
+        <slot v-if="!valid" name="error-message" v-bind="{ errorMessage }">
+          <div>{{ errorMessage }}</div>
+        </slot>
       </transition>
     </div>
   </div>
