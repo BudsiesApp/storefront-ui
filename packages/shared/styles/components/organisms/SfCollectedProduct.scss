@@ -4,7 +4,12 @@
 
   position: relative;
   box-sizing: border-box;
-  display: flex;
+  display: grid;
+  grid-template-columns: 8.75rem 1fr;
+  grid-template-areas:
+    "aside main"
+    "configuration configuration"
+    "actions actions";
   max-width: var(--collected-product-width);
   padding: var(--collected-product-padding, var(--spacer-xs));
   background: var(--collected-product-background);
@@ -39,9 +44,8 @@
     right: var(--collected-product-remove-right, var(--spacer-xs));
   }
   &__aside {
-    order: -1;
+    grid-area: aside;
     position: relative;
-    flex: 0 0 8.75rem;
     line-height: 0;
   }
   &__image {
@@ -61,7 +65,7 @@
     --quantity-selector-height: 2.5rem;
   }
   &__main {
-    flex: 1;
+    grid-area: main;
     display: flex;
     flex-direction: column;
     margin: var(--collected-product-main-margin, 0 0 0 var(--spacer-base));
@@ -71,10 +75,19 @@
     flex-direction: var(--collected-product-main-flex-direction, row);
     justify-content: space-between;
   }
-  &__details,
-  &__actions {
+  &__configuration {
+    grid-area: configuration;
+    margin: var(--collected-product-configuration-margin, 0 0 0 var(--spacer-base));
+  }
+  &__details {
     display: flex;
     flex-direction: column;
+  }
+  &__actions {
+    grid-area: actions;
+    display: flex;
+    flex-direction: column;
+    margin: var(--collected-product-actions-margin, 0 0 0 var(--spacer-base));
   }
   &__title {
     display: inline-block;
@@ -98,6 +111,11 @@
     --collected-product-remove-transition: opacity 150ms ease-in-out;
     --collected-product-remove-circle-icon-display: flex;
     --collected-product-remove-text-display: none;
+    grid-template-columns: 8.75rem 1fr;
+    grid-template-areas:
+      "aside main"
+      "aside configuration"
+      "aside actions";
     &::after {
       --collected-product-transition: box-shadow 150ms ease-in-out;
     }
@@ -118,9 +136,6 @@
         );
       }
     }
-    &__aside {
-      flex: 0 0 8.75rem;
-    }
     &__image {
       mix-blend-mode: darken;
     }
@@ -133,7 +148,6 @@
         flex-end
       );
       align-items: var(--collected-product-actions-align-items, flex-start);
-      flex: 2;
     }
     &--detailed {
       --collected-product-width: 100%;

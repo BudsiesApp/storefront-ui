@@ -18,11 +18,6 @@
               :special="specialPrice"
             />
           </slot>
-
-        </div>
-
-        <div class="sf-collected-product__actions desktop-only">
-          <slot name="actions" />
         </div>
 
         <slot name="remove" v-bind="{ removeHandler }">
@@ -38,12 +33,14 @@
           >
         </slot>
       </div>
+    </div>
 
+    <div class="sf-collected-product__configuration">
       <slot name="configuration" />
+    </div>
 
-      <div class="sf-collected-product__actions mobile-only">
-        <slot name="actions" />
-      </div>
+    <div class="sf-collected-product__actions">
+      <slot name="actions" />
     </div>
 
     <div class="sf-collected-product__aside">
