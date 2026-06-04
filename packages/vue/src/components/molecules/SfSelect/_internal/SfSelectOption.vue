@@ -1,13 +1,11 @@
 <template>
   <li
-    :id="value"
+    :id="myOptionId"
     role="option"
     class="sf-select-option"
-    :class="{ 'sf-select-option--is-active': selected === value }"
-    tabindex="0"
-    :aria-selected="selected === value ? 'true' : 'false'"
-    @click="clicked"
-    @keyup.space.enter="clicked"
+    :class="{ 'sf-select-option--is-active': isActiveOption }"
+    :aria-selected="isSelected ? 'true' : 'false'"
+    @click.stop="clicked"
   >
     <!-- @slot -->
     <slot />
@@ -25,16 +23,22 @@ export default {
     },
   },
   computed: {
-    selected() {
-      return this.$parent.selected;
+    myIndex() {
+      return this.$parent.indexes[JSON.stringify(this.value)];
     },
-    indexes() {
-      return this.$parent.indexes;
+    myOptionId() {
+      return this.$parent.optionId(this.myIndex);
+    },
+    isSelected() {
+      return this.myIndex === this.$parent.index;
+    },
+    isActiveOption() {
+      return this.myIndex === this.$parent.activeIndex;
     },
   },
   methods: {
     clicked() {
-      this.$parent.$emit("update", this.indexes[JSON.stringify(this.value)]);
+      this.$parent.$emit("update", this.myIndex);
     },
   },
 };
