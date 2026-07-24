@@ -7,7 +7,7 @@
     }"
   >
     <div class="sf-input__wrapper">
-      <label class="sf-input__label" :for="inputId">
+      <label class="sf-input__label" :for="inputId" v-if="label">
         <!-- @slot Custom input label -->
         <slot name="label" v-bind="{ label }">{{ label }}</slot>
       </label>
