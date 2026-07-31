@@ -42,7 +42,7 @@
     --button-background: var(--c-primary-variant);
     --button-transition: background 150ms linear;
   }
-  &:disabled {
+  &[aria-disabled] {
     --button-background: var(--c-light);
     --button-color: var(--c-text-muted);
     --button-cursor: default;
@@ -74,7 +74,7 @@
       --button-color: var(--c-text-muted);
       --button-transition: color 150ms linear;
     }
-    &:disabled {
+    &[aria-disabled] {
       --button-border-color: var(--c-light);
       --button-background: transparent;
       --button-color: var(--c-text-muted);
@@ -108,7 +108,7 @@
     &:active {
       --button-color: var(--c-gray);
     }
-    &:disabled {
+    &[aria-disabled] {
       --button-background: transparent;
       --button-color: var(--c-text-muted);
     }
@@ -123,7 +123,7 @@
           --button-color: var(--c-gray);
           --button-background: transparent;
         }
-        &:disabled {
+        &[aria-disabled] {
           &:hover {
             --button-color: var(--c-text-muted);
           }
