@@ -102,7 +102,7 @@
         --input-label-required: " *";
       }
     }
-    &:disabled {
+    &[aria-disabled="true"] {
       --input-color: var(--c-text-disabled);
       /* add to provide color on iOS */
       -webkit-text-fill-color: var(--c-text-disabled);
@@ -110,6 +110,8 @@
         --icon-color: var(--text-disabled);
         --input-label-color: var(--c-text-disabled);
       }
+
+      pointer-events: none;
     }
     &[type="number"] {
       &::-webkit-inner-spin-button,

@@ -47,6 +47,8 @@
     --button-color: var(--c-text-muted);
     --button-cursor: default;
     --button-box-shadow: none;
+
+    pointer-events: none;
   }
   &--pure {
     --button-padding: 0;

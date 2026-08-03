@@ -16,7 +16,7 @@
         v-focus
         :value="value"
         :required="required"
-        :disabled="disabled"
+        :aria-disabled="String(disabled)"
         :name="name"
         :class="{ 'sf-input--is-password': isPassword }"
         :type="inputType"
