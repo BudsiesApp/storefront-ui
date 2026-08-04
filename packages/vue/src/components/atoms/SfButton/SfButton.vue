@@ -3,7 +3,7 @@
     v-focus
     class="sf-button"
     v-bind="$attrs"
-    :aria-disabled="String(disabled)"
+    :disabled="disabled"
     v-on="$listeners"
   >
     <!--@slot Use this slot to place content inside the button.-->

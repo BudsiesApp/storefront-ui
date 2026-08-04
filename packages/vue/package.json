@@ -30,7 +30,7 @@
   ],
   "dependencies": {
     "@glidejs/glide": "^3.3.0",
-    "@storefront-ui/shared": "https://gitpkg-budsies-xi.vercel.app/BudsiesApp/storefront-ui/packages/shared?0e2e872b2ea3baccd546c8d8919934e6665872f5",
+    "@storefront-ui/shared": "https://gitpkg-budsies-xi.vercel.app/BudsiesApp/storefront-ui/packages/shared?3ff374628936ba579a9bbb2a634c6c3ce9db6ac5",
     "body-scroll-lock": "^3.0.1",
     "core-js": "^3.6.5",
     "hammerjs": "^2.0.8",
