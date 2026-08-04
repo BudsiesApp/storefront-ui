@@ -1,10 +1,18 @@
 <template>
-  <div class="sf-dropdown">
-    <SfOverlay :visible="isOpen" class="sf-dropdown__overlay" />
+  <div
+    class="sf-dropdown"
+    v-click-outside="close"
+  >
+    <slot name="toggleButton" />
+
+    <SfOverlay :visible="isOpen"
+      class="sf-dropdown__overlay"
+      @click.native="close"
+    />
+
     <transition name="sf-dropdown">
       <div
         v-show="isOpen"
-        v-click-outside="close"
         class="sf-dropdown__container"
       >
         <!--@slot Use this slot to replace title. -->
