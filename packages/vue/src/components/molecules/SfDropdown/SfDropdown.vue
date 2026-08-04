@@ -1,18 +1,10 @@
 <template>
-  <div
-    class="sf-dropdown"
-    v-click-outside="close"
-  >
-    <slot name="toggleButton" />
-
-    <SfOverlay :visible="isOpen"
-      class="sf-dropdown__overlay"
-      @click.native="close"
-    />
-
+  <div class="sf-dropdown">
+    <SfOverlay :visible="isOpen" class="sf-dropdown__overlay" />
     <transition name="sf-dropdown">
       <div
         v-show="isOpen"
+        v-click-outside="closeOnOutsideClick ? close : () => {}"
         class="sf-dropdown__container"
       >
         <!--@slot Use this slot to replace title. -->
@@ -63,6 +55,10 @@ export default {
       type: String,
       default: "",
     },
+    closeOnOutsideClick: {
+      type: Boolean,
+      default: true,
+    }
   },
   watch: {
     isOpen: {
