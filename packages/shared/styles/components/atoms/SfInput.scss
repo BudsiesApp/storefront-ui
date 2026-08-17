@@ -102,6 +102,7 @@
         --input-label-required: " *";
       }
     }
+    &[aria-disabled="true"],
     &:disabled {
       --input-color: var(--c-text-disabled);
       /* add to provide color on iOS */
@@ -110,6 +111,8 @@
         --icon-color: var(--text-disabled);
         --input-label-color: var(--c-text-disabled);
       }
+
+      pointer-events: none;
     }
     &[type="number"] {
       &::-webkit-inner-spin-button,

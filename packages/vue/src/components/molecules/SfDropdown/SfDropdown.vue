@@ -4,7 +4,7 @@
     <transition name="sf-dropdown">
       <div
         v-show="isOpen"
-        v-click-outside="close"
+        v-click-outside="closeOnOutsideClick ? close : () => {}"
         class="sf-dropdown__container"
       >
         <!--@slot Use this slot to replace title. -->
@@ -55,6 +55,10 @@ export default {
       type: String,
       default: "",
     },
+    closeOnOutsideClick: {
+      type: Boolean,
+      default: true,
+    }
   },
   watch: {
     isOpen: {
