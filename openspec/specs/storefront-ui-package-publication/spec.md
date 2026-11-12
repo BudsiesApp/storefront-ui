@@ -57,7 +57,7 @@ GitHub Releases in the source repository SHALL host the prepared archives at sta
 - **THEN** it receives the prepared package rather than a repository source archive or expiring Actions artifact, and its SHA-256 matches the release metadata
 
 ### Requirement: Existing release assets remain unchanged
-Publication MUST NOT overwrite or delete previously published assets or repoint a consumed release URL. A repeat publication SHALL reuse identical existing content and reject conflicting archives or provenance instead of replacing them.
+Publication MUST NOT overwrite or delete previously published assets or repoint a consumed release URL. A repeat publication SHALL reuse identical existing content and reject conflicting archives or provenance instead of replacing them. The separately authorized feature-preview cleanup is the sole deletion exception described below.
 
 #### Scenario: Identical repeat
 - **WHEN** publication targets an existing release whose corresponding assets and provenance are identical
@@ -109,4 +109,21 @@ Each preview SHALL identify the repository, resolved shared/Vue source commits a
 
 #### Scenario: Packaging or merge identity changes
 - **WHEN** a selected source or packaging commit differs, including a new merge commit with similar file contents
-- **THEN** the command uses a distinct preview identity and retains every previously consumed URL
+- **THEN** the command uses a distinct preview identity and retains previously consumed URLs except when an eligible feature preview is later cleaned up
+
+### Requirement: Feature-preview cleanup
+New preview releases SHALL record feature-branch associations outside immutable assets. Scheduled cleanup MAY delete a trusted tracked preview only after every associated branch has been observed absent for at least 30 days. Publication, tracking and cleanup MUST serialize; errors MUST fail safe. Deleting a preview makes its URLs unavailable but MUST NOT delete its Git tag.
+
+#### Scenario: Exclusions and reuse
+- **WHEN** a release is stable, untracked, commit-only, protected or associated with a maintained branch
+- **THEN** cleanup does not delete it; explicit commit-only reuse permanently prevents cleanup
+- **AND** reuse from a feature branch records that association before success
+- **AND** an omitted historical companion does not prevent tracking the explicitly selected feature branch
+
+#### Scenario: Reappearance or multiple associations
+- **WHEN** any associated branch is observed present
+- **THEN** its deletion timer resets and cleanup waits until all associations have independently aged through 30 days of observed absence
+
+#### Scenario: Observed-state limitations
+- **WHEN** a branch reappears between scheduled observations or after the final check
+- **THEN** the reappearance can be missed because branch writes are not atomic with release deletion; maintainers MUST be informed of this limitation

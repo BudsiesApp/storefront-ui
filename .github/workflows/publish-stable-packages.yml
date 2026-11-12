@@ -25,6 +25,7 @@ jobs:
           python-version: '3.11.11'
       - run: python scripts/test-package-release.py
       - run: python scripts/test-preview-packages.py
+      - run: python scripts/test-preview-cleanup.py
       - run: python scripts/test-stable-packages.py
       - run: python scripts/publish-stable.py
         env:
