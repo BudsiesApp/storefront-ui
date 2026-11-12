@@ -20,8 +20,20 @@ generation hooks, and changes its shared dependency to this release's shared
 asset; no source checkout is modified. Shared retains its existing deep-import
 tree and its unused, absent root main file.
 
-For later releases, update the selected source SHA(s) and baseline test
-assertions, commit, and run the tests. Once authorized, push a new unused
+For feature testing, first check out and push the committed publishing tools,
+and push the source branch or commit to this repository's `origin`.
+Run `python3 scripts/preview-packages.py --vue-ref <feature-branch>` or use
+`--shared-ref <feature-branch>` independently. Omitted refs default to the
+corresponding full source pins in `package-release.json`; `--help` displays
+them. Python 3.11+, Git, authenticated `gh` and repository write access are
+required. The JSON contains both package URLs, source and packaging SHAs,
+Python/zlib versions, and manifest/checksum URLs. Verify those before updating
+both UI URLs and the lock. For another commit, rerun against the advanced
+branch; after merge, pass the actual merged SHA. No publishing configuration
+edits or manual tag are needed. Previews are public and immutable.
+
+For the separate explicit-release workflow, update the source SHA(s) and
+baseline test assertions, commit, and run the tests. Once authorized, push a new unused
 `packages-*` tag pointing to the packaging commit. The workflow publishes all
 four assets. A rerun reuses identical assets and fills missing ones; a conflict
 fails without replacement. Investigate conflicts and use a new tag rather than

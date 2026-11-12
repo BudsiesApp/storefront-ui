@@ -42,8 +42,9 @@ def generate(files):
     files["storiesOf.js"] = (stories.encode(), 0o644)
 
 
-def prepare(output, tag):
-    config = json.loads((ROOT / "scripts/package-release.json").read_text())
+def prepare(output, tag, config=None, identity=None):
+    if config is None:
+        config = json.loads((ROOT / "scripts/package-release.json").read_text())
     packaging = git("rev-parse", "HEAD^{commit}").decode().strip()
     output.mkdir(parents=True, exist_ok=True)
     packages = []
@@ -70,6 +71,8 @@ def prepare(output, tag):
         packages.append({"name": manifest["name"], "version": manifest["version"],
                          "sourceRevision": revision, "sourcePath": path, "asset": asset, "sha256": digest})
     metadata = {"repository": REPOSITORY, "releaseTag": tag, "packagingRevision": packaging, "packages": packages}
+    if identity is not None:
+        metadata["previewIdentity"] = identity
     (output / "release-manifest.json").write_text(json.dumps(metadata, indent=2) + "\n")
     (output / "SHA256SUMS").write_text("".join(f"{p['sha256']}  {p['asset']}\n" for p in packages))
 
