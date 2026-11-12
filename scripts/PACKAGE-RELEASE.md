@@ -21,14 +21,17 @@ asset; no source checkout is modified. Shared retains its existing deep-import
 tree and its unused, absent root main file.
 
 Every push to the maintained `optimuspro` branch automatically publishes a
-non-prerelease `stable-packages-<full-push-SHA>` release. Both shared and Vue
-are taken from that exact triggering commit, independently of the historical
-pins in `package-release.json`. The checkout, packaging revision and release
+non-prerelease release with tag and title `optimuspro_<first-seven-push-SHA>`.
+Both shared and Vue are taken from that exact triggering commit, independently
+of the historical pins in `package-release.json`. The checkout, packaging revision and release
 tag must agree with that commit. The Vue manifest points to the matching
 shared asset in the same release. Check the Actions run, manifest and
 `SHA256SUMS` before selecting these URLs in a consumer. An identical rerun
 reuses assets; conflicting assets or a tag at a different commit fail without
-replacement. Publication does not update consumers or deploy applications.
+replacement, including when different commits share the same seven-character
+prefix. The manifest records the full source and packaging SHA. Older stable,
+explicit-tag and preview releases retain their existing names and assets.
+Publication does not update consumers or deploy applications.
 
 For feature testing, first check out and push the committed publishing tools,
 and push the source branch or commit to this repository's `origin`.
