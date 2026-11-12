@@ -1,0 +1,33 @@
+name: Cleanup feature previews
+
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: preview-cleanup-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: optimuspro
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.11'
+      - run: python scripts/test-preview-cleanup.py
+      - if: github.event_name == 'schedule'
+        run: python scripts/preview-cleanup.py
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - if: github.event_name == 'workflow_dispatch'
+        run: python scripts/preview-cleanup.py --dry-run
+        env:
+          GH_TOKEN: ${{ github.token }}
