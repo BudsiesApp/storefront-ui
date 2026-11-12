@@ -1,0 +1,29 @@
+name: Publish packages
+
+on:
+  push:
+    tags:
+      - 'packages-*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: packages-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.11'
+      - run: python scripts/test-package-release.py
+      - run: python scripts/package-release.py --output "$RUNNER_TEMP/packages" --tag "$GITHUB_REF_NAME"
+      - run: python scripts/publish-release.py "$RUNNER_TEMP/packages"
+        env:
+          GH_TOKEN: ${{ github.token }}
