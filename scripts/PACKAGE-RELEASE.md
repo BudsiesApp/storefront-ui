@@ -20,6 +20,16 @@ generation hooks, and changes its shared dependency to this release's shared
 asset; no source checkout is modified. Shared retains its existing deep-import
 tree and its unused, absent root main file.
 
+Every push to the maintained `optimuspro` branch automatically publishes a
+non-prerelease `stable-packages-<full-push-SHA>` release. Both shared and Vue
+are taken from that exact triggering commit, independently of the historical
+pins in `package-release.json`. The checkout, packaging revision and release
+tag must agree with that commit. The Vue manifest points to the matching
+shared asset in the same release. Check the Actions run, manifest and
+`SHA256SUMS` before selecting these URLs in a consumer. An identical rerun
+reuses assets; conflicting assets or a tag at a different commit fail without
+replacement. Publication does not update consumers or deploy applications.
+
 For feature testing, first check out and push the committed publishing tools,
 and push the source branch or commit to this repository's `origin`.
 Run `python3 scripts/preview-packages.py --vue-ref <feature-branch>` or use

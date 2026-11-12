@@ -1,0 +1,31 @@
+name: Publish stable packages
+
+on:
+  push:
+    branches:
+      - optimuspro
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stable-packages-${{ github.repository }}-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.11'
+      - run: python scripts/test-package-release.py
+      - run: python scripts/test-preview-packages.py
+      - run: python scripts/test-stable-packages.py
+      - run: python scripts/publish-stable.py
+        env:
+          GH_TOKEN: ${{ github.token }}
