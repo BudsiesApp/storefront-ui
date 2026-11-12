@@ -45,6 +45,32 @@ both UI URLs and the lock. For another commit, rerun against the advanced
 branch; after merge, pass the actual merged SHA. No publishing configuration
 edits or manual tag are needed. Previews are public and immutable.
 
+New feature-branch previews are tracked outside their immutable assets. A
+scheduled workflow checks every recorded branch; only after all are observed
+deleted for 30 days may it delete the prerelease and its assets. The Git tag
+is retained, but the preview download URLs stop working. Reusing a preview
+adds each selected feature branch to its associations. An explicitly selected
+commit, tag, maintained/release branch, or protected branch permanently pins
+the preview; the omitted historical companion does not. Older previews whose
+association history is unknown are never adopted or deleted. The registry is
+stored on the `preview-cleanup/registry` branch, with no changes to release
+assets. The scheduler lives on the repository default branch and checks out
+`optimuspro`; manual workflow dispatch runs a read-only dry run.
+Only `feature/`, `feature-`, `feat/`, `feat-`, or ticket-number-and-hyphen
+branch names qualify; other ambiguous branch names permanently pin the preview.
+
+The 30-day clock starts when deletion is detected, not when a preview is made.
+An observed reappearance resets that branch's clock. The final branch check is
+immediately before deletion, but a brief reappearance between checks or a
+branch created after the final check may be missed. GitHub schedules can be
+delayed or disabled; they never shorten the retention interval.
+
+Publication and cleanup share a repository-wide Git ref lock. Concurrent work
+fails rather than stealing the lock. A failed or interrupted operation leaves
+the lock in place: inspect the workflow/publisher and registry, confirm no
+operation is active and that any partially published preview is safe, then
+resolve the lock with an authorized maintainer. Never automatically clear it.
+
 For the separate explicit-release workflow, update the source SHA(s) and
 baseline test assertions, commit, and run the tests. Once authorized, push a new unused
 `packages-*` tag pointing to the packaging commit. The workflow publishes all

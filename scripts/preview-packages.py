@@ -58,22 +58,37 @@ def resolve_sources(shared_ref, vue_ref):
 def main():
     defaults = json.loads((ROOT / 'scripts/package-release.json').read_text())
     parser = argparse.ArgumentParser(description='Publish an immutable paired package preview')
-    parser.add_argument('--shared-ref', default=defaults['sharedRevision'], help='shared source ref (default: %(default)s)')
-    parser.add_argument('--vue-ref', default=defaults['vueRevision'], help='Vue source ref (default: %(default)s)')
+    parser.add_argument('--shared-ref', help='shared source ref (default: ' + defaults['sharedRevision'] + ')')
+    parser.add_argument('--vue-ref', help='Vue source ref (default: ' + defaults['vueRevision'] + ')')
     args = parser.parse_args()
     if git('status', '--porcelain', '--', 'scripts/package-release.py', 'scripts/package-release.json',
-           'scripts/publish-release.py', 'scripts/preview-packages.py'):
+           'scripts/publish-release.py', 'scripts/preview-packages.py', 'scripts/preview-cleanup.py'):
         raise ValueError('publishing inputs must be committed')
     packaging = git('rev-parse', 'HEAD^{commit}')
-    sources = resolve_sources(args.shared_ref, args.vue_ref)
-    value = identity(packaging, sources, {'python': sys.version.split()[0], 'zlib': zlib.ZLIB_RUNTIME_VERSION})
-    tag = tag_for(value)
-    with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp)
-        load('package-release').prepare(path, tag, {'sharedRevision': sources['shared'], 'vueRevision': sources['vue']}, value)
-        publisher = load('publish-release')
-        publisher.publish(publisher.GitHub(), tag, path, preview=True)
-        manifest = json.loads((path / 'release-manifest.json').read_text())
+    cleaner = load('preview-cleanup')
+    tracking = cleaner.GitHub()
+    repository = tracking.repository()
+    if repository.get('full_name', '').lower() != REPOSITORY.lower():
+        raise ValueError('repository could not be verified')
+    refs = (args.shared_ref or defaults['sharedRevision'], args.vue_ref or defaults['vueRevision'])
+    with tracking.lock(packaging):
+        branches, pinned = cleaner.associations(refs, (args.shared_ref is None, args.vue_ref is None), repository['default_branch'])
+        pinned = pinned or any(tracking.protected(branch) for branch in branches)
+        sources = resolve_sources(*refs)
+        value = identity(packaging, sources, {'python': sys.version.split()[0], 'zlib': zlib.ZLIB_RUNTIME_VERSION})
+        tag = tag_for(value)
+        registry, parent = tracking.read_registry()
+        existed = tracking.release(tag) is not None
+        unknown_tag = not existed and tag not in registry['previews'] and tracking.ref(tag) is not None
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            load('package-release').prepare(path, tag, {'sharedRevision': sources['shared'], 'vueRevision': sources['vue']}, value)
+            publisher = load('publish-release')
+            publisher.publish(publisher.GitHub(), tag, path, preview=True)
+            manifest = json.loads((path / 'release-manifest.json').read_text())
+        release = tracking.release(tag)
+        if cleaner.register(registry, tag, release, packaging, branches, pinned, existed or unknown_tag):
+            tracking.write_registry(registry, parent, packaging)
     base = f'https://github.com/{REPOSITORY}/releases/download/{tag}/'
     print(json.dumps({'releaseTag': tag, 'identity': value,
                       'packages': [{**package, 'url': base + package['asset']} for package in manifest['packages']],

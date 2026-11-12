@@ -59,13 +59,22 @@ class PreviewTests(unittest.TestCase):
     def test_command_returns_complete_handoff(self):
         sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
         package = preview.load('package-release')
+        cleaner = preview.load('preview-cleanup')
         fake = FakeGitHub()
         stdout = io.StringIO()
         def fake_git(*args): return '' if args[0] == 'status' else sha
-        def fake_load(name): return package if name == 'package-release' else publisher
+        def fake_load(name): return {'package-release': package, 'publish-release': publisher, 'preview-cleanup': cleaner}[name]
+        class Tracking:
+            def repository(self): return {'full_name': preview.REPOSITORY, 'default_branch': 'develop'}
+            def lock(self, sha): return contextlib.nullcontext()
+            def ref(self, tag): return None
+            def read_registry(self): return ({'version': 1, 'repository': preview.REPOSITORY, 'previews': {}}, None)
+            def release(self, tag): return {'id': 42, 'tag_name': tag, 'name': tag, 'draft': False, 'prerelease': True} if fake.exists else None
+            def write_registry(self, registry, parent, packaging): self.registry = registry
+        tracking = Tracking()
         with patch.object(sys, 'argv', ['preview-packages.py', '--shared-ref', sha, '--vue-ref', sha]), \
              patch.object(preview, 'git', fake_git), patch.object(preview, 'resolve', return_value=sha), \
-             patch.object(preview, 'load', fake_load), patch.object(publisher, 'GitHub', return_value=fake), \
+             patch.object(preview, 'load', fake_load), patch.object(publisher, 'GitHub', return_value=fake), patch.object(cleaner, 'GitHub', return_value=tracking), \
              contextlib.redirect_stdout(stdout):
             preview.main()
         result = json.loads(stdout.getvalue())
@@ -74,12 +83,36 @@ class PreviewTests(unittest.TestCase):
         self.assertTrue(all(result['releaseTag'] in package['url'] for package in result['packages']))
         self.assertTrue(result['manifestUrl'].endswith('/release-manifest.json'))
         self.assertTrue(result['checksumsUrl'].endswith('/SHA256SUMS'))
+        self.assertTrue(tracking.registry['previews'][result['releaseTag']]['pinned'])
 
     def test_missing_tag_uses_reference_endpoint(self):
         result = subprocess.CompletedProcess([], 1, b'', b'gh: Not Found (HTTP 404)')
         with patch.object(publisher, 'run', return_value=result) as call:
             self.assertIsNone(publisher.GitHub().existing_commit('package-preview-' + 'a' * 64))
             self.assertIn('/git/ref/tags/', call.call_args.args[2])
+
+    def test_feature_with_omitted_historical_companion_is_tracked(self):
+        sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+        package, cleaner, fake = preview.load('package-release'), preview.load('preview-cleanup'), FakeGitHub()
+        class Tracking:
+            def repository(self): return {'full_name': preview.REPOSITORY, 'default_branch': 'develop'}
+            def lock(self, sha): return contextlib.nullcontext()
+            def ref(self, tag): return None
+            def protected(self, branch): return False
+            def read_registry(self): return ({'version': 1, 'repository': preview.REPOSITORY, 'previews': {}}, None)
+            def release(self, tag): return {'id': 42, 'tag_name': tag, 'name': tag, 'draft': False, 'prerelease': True} if fake.exists else None
+            def write_registry(self, registry, parent, packaging): self.registry = registry
+        tracking = Tracking()
+        def fake_load(name): return {'package-release': package, 'publish-release': publisher, 'preview-cleanup': cleaner}[name]
+        with patch.object(sys, 'argv', ['preview-packages.py', '--vue-ref', 'feature/a']), \
+             patch.object(preview, 'git', side_effect=lambda *a: '' if a[0] == 'status' else sha), \
+             patch.object(preview, 'resolve', return_value=sha), patch.object(preview, 'load', fake_load), \
+             patch.object(publisher, 'GitHub', return_value=fake), patch.object(cleaner, 'GitHub', return_value=tracking), \
+             contextlib.redirect_stdout(io.StringIO()):
+            preview.main()
+        record = next(iter(tracking.registry['previews'].values()))
+        self.assertEqual(record['branches'], {'feature/a': None})
+        self.assertFalse(record['pinned'])
 
     def test_selected_commit_preparation(self):
         sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
