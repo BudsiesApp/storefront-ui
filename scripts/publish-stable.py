@@ -31,7 +31,8 @@ def selected_commit(env):
 
 def main():
     sha = selected_commit(os.environ)
-    tag = 'stable-packages-' + sha
+    branch = os.environ['GITHUB_REF'].removeprefix('refs/heads/')
+    tag = f'{branch}_{sha[:7]}'
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp)
         load('package-release').prepare(path, tag, {'sharedRevision': sha, 'vueRevision': sha})

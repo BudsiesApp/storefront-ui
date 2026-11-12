@@ -7,7 +7,7 @@ Distribute prepared Storefront UI shared and Vue sources as traceable public rel
 ## Requirements
 
 ### Requirement: Automatic stable branch publication
-Every push to `optimuspro` SHALL publish a non-prerelease, immutable GitHub release named `stable-packages-<full triggering commit SHA>`. Shared and Vue sources and the packaging revision MUST use the exact triggering commit, independently of historical release configuration. The Vue archive MUST reference the shared asset in the same release. Existing tag-based releases and previews MUST remain available and unchanged.
+Every push to `optimuspro` SHALL publish a non-prerelease, immutable GitHub release with tag and title `optimuspro_<first seven characters of the triggering commit SHA>`. Shared and Vue sources and the packaging revision MUST use and record the full exact triggering commit, independently of historical release configuration. The Vue archive MUST reference the shared asset in the same release. Existing stable, tag-based and preview releases MUST remain available and unchanged.
 
 #### Scenario: Stable branch advances
 - **WHEN** a push updates `optimuspro`
@@ -15,7 +15,8 @@ Every push to `optimuspro` SHALL publish a non-prerelease, immutable GitHub rele
 
 #### Scenario: Stable release is repeated or conflicts
 - **WHEN** the same stable publication is rerun
-- **THEN** identical assets are reused, and an incompatible tag, release or asset fails without replacing existing content
+- **THEN** identical assets are reused, and an incompatible tag, release title, status or asset fails without replacing existing content
+- **AND** a tag pointing to a different full commit fails even when that commit shares the same seven-character prefix
 
 ### Requirement: Explicit independent source selection
 The explicit release-tag path SHALL run through GitHub Actions in `BudsiesApp/storefront-ui` with independently selected shared and Vue source commits. The on-demand path SHALL preserve this existing interface. The initial migration artifacts MUST preserve package names, versions and runtime dependencies except the documented shared dependency transport change.

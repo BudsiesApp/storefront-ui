@@ -17,14 +17,14 @@ package = stable.load('package-release')
 
 
 class FakeGitHub:
-    def __init__(self, sha, assets=None, tag_sha=None, release=False, prerelease=False):
+    def __init__(self, sha, assets=None, tag_sha=None, release=False, prerelease=False, title=None, draft=False):
         self.sha, self.assets, self.tag_sha = sha, dict(assets or {}), tag_sha
-        self.exists, self.prerelease, self.writes = release, prerelease, []
+        self.exists, self.prerelease, self.title, self.draft, self.writes = release, prerelease, title, draft, []
 
-    def commit(self, ref): return self.tag_sha if ref.startswith('stable-packages-') else ref
+    def commit(self, ref): return self.tag_sha if ref.startswith('optimuspro_') else ref
     def existing_commit(self, tag): return self.tag_sha
     def release(self, tag):
-        return {'draft': False, 'prerelease': self.prerelease,
+        return {'draft': self.draft, 'prerelease': self.prerelease, 'name': self.title if self.title is not None else tag,
                 'assets': [{'name': k, 'id': k} for k in self.assets]} if self.exists else None
     def download(self, asset): return self.assets[asset['id']]
     def create_stable(self, tag, target): self.writes.append('create'); self.exists = True; self.tag_sha = target
@@ -44,10 +44,42 @@ class StableTests(unittest.TestCase):
         self.assertIn('ref: ${{ github.sha }}', workflow)
         self.assertIn('python scripts/publish-stable.py', workflow)
 
+    def test_main_uses_branch_and_seven_commit_characters(self):
+        sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+        env = {'GITHUB_EVENT_NAME': 'push', 'GITHUB_REF': 'refs/heads/optimuspro', 'GITHUB_SHA': sha}
+        with patch.dict('os.environ', env), patch.object(package, 'prepare') as prepare, \
+             patch.object(publisher, 'GitHub') as github, patch.object(publisher, 'publish') as publish, \
+             patch.object(stable, 'load', side_effect=[package, publisher]):
+            stable.main()
+        tag = 'optimuspro_' + sha[:7]
+        self.assertEqual(prepare.call_args.args[1:], (tag, {'sharedRevision': sha, 'vueRevision': sha}))
+        self.assertEqual(publish.call_args.args[:2], (github.return_value, tag))
+        self.assertEqual(publish.call_args.kwargs, {'stable': True})
+
+    def test_stable_release_title(self):
+        with patch.object(publisher, 'run') as run:
+            publisher.GitHub().create_stable('optimuspro_3ce1230', '3ce1230' + 'a' * 33)
+        args = run.call_args.args
+        self.assertEqual(args[args.index('--title') + 1], 'optimuspro_3ce1230')
+
+    def test_arbitrary_explicit_package_tag_is_not_treated_as_stable(self):
+        sha = 'a' * 40
+        class ExplicitGitHub(FakeGitHub):
+            def commit(self, ref): return sha
+            def create(self, tag): self.writes.append('create'); self.exists = True
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            for name in publisher.ASSETS: (path / name).write_bytes(name.encode())
+            for tag in ('packages-test', 'packages-optimuspro_aaaaaaa', 'packages-stable-packages-' + sha):
+                (path / 'release-manifest.json').write_text(json.dumps({'releaseTag': tag, 'packagingRevision': sha, 'packages': [{'sourceRevision': 'b' * 40}]}))
+                fake = ExplicitGitHub(sha)
+                publisher.publish(fake, tag, path)
+                self.assertEqual(fake.writes, ['create', *publisher.ASSETS])
+
     def test_each_selected_commit_and_archive(self):
         for ref in ('HEAD', 'HEAD^'):
             sha = subprocess.check_output(['git', 'rev-parse', ref], cwd=ROOT, text=True).strip()
-            tag = 'stable-packages-' + sha
+            tag = 'optimuspro_' + sha[:7]
             with tempfile.TemporaryDirectory() as tmp:
                 path = Path(tmp)
                 package.prepare(path, tag, {'sharedRevision': sha, 'vueRevision': sha})
@@ -68,7 +100,7 @@ class StableTests(unittest.TestCase):
                     self.assertEqual(expected, actual)
 
     def test_reuse_partial_and_collisions(self):
-        sha = 'a' * 40; tag = 'stable-packages-' + sha
+        sha = 'a' * 40; tag = 'optimuspro_' + sha[:7]
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp)
             for name in publisher.ASSETS: (path / name).write_bytes(name.encode())
@@ -80,13 +112,23 @@ class StableTests(unittest.TestCase):
                 self.assertEqual(fake.assets, expected)
                 if assets == expected: self.assertEqual(fake.writes, [])
             for fake in (FakeGitHub(sha, {'SHA256SUMS': b'bad'}, sha, True),
-                         FakeGitHub(sha, {}, 'b' * 40), FakeGitHub(sha, {}, sha, True, True)):
+                         FakeGitHub(sha, {}, 'a' * 7 + 'b' * 33),
+                         FakeGitHub(sha, {}, 'a' * 7 + 'b' * 33, True),
+                         FakeGitHub(sha, {}, sha, True, True),
+                         FakeGitHub(sha, {}, sha, True, title='wrong'),
+                         FakeGitHub(sha, {}, sha, True, draft=True)):
                 with self.assertRaises(ValueError): publisher.publish(fake, tag, path, stable=True)
                 self.assertEqual(fake.writes, [])
             (path / 'release-manifest.json').write_text(json.dumps({'releaseTag': tag, 'packagingRevision': sha, 'packages': [{'sourceRevision': 'b' * 40}]}))
             fake = FakeGitHub(sha)
             with self.assertRaises(ValueError): publisher.publish(fake, tag, path, stable=True)
             self.assertEqual(fake.writes, [])
+            for revision, invalid_tag in ((sha, 'optimuspro_' + sha[:8]), ('a' * 7, 'optimuspro_' + sha[:7]),
+                                          (sha, 'stable-packages-' + sha)):
+                (path / 'release-manifest.json').write_text(json.dumps({'releaseTag': invalid_tag, 'packagingRevision': revision, 'packages': [{'sourceRevision': revision}]}))
+                fake = FakeGitHub(sha)
+                with self.assertRaises(ValueError): publisher.publish(fake, invalid_tag, path, stable=True)
+                self.assertEqual(fake.writes, [])
 
 
 if __name__ == '__main__': unittest.main()

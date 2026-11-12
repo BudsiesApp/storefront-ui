@@ -2,6 +2,7 @@
 """Publish missing release assets only after checking all existing assets."""
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -60,11 +61,12 @@ def publish(api, tag, directory, preview=False, stable=False):
     release = api.release(tag)
     if preview and stable:
         raise ValueError("preview and stable modes are mutually exclusive")
-    if stable and (not tag.startswith("stable-packages-") or tag != "stable-packages-" + metadata["packagingRevision"] or
+    if stable and (not re.fullmatch(r"[0-9a-f]{40}", metadata["packagingRevision"]) or
+                   tag != "optimuspro_" + metadata["packagingRevision"][:7] or
                    any(package["sourceRevision"] != metadata["packagingRevision"] for package in metadata["packages"])):
-        raise ValueError("stable tag and sources must identify the packaging commit")
-    if release is not None and stable and (release.get("draft") or release.get("prerelease")):
-        raise ValueError("existing stable release is a draft or prerelease")
+        raise ValueError("stable tag and sources must identify the full packaging commit")
+    if release is not None and stable and (release.get("draft") or release.get("prerelease") or release.get("name") != tag):
+        raise ValueError("existing stable release has incompatible title or status")
     if preview or stable:
         if api.commit(metadata["packagingRevision"]) != metadata["packagingRevision"]:
             raise ValueError("packaging commit is not available on GitHub")
@@ -92,8 +94,8 @@ def publish(api, tag, directory, preview=False, stable=False):
         if name not in existing:
             api.upload(tag, directory / name)
     final = api.release(tag)
-    if stable and (final.get("draft") or final.get("prerelease")):
-        raise ValueError("published stable release is a draft or prerelease")
+    if stable and (final.get("draft") or final.get("prerelease") or final.get("name") != tag):
+        raise ValueError("published stable release has incompatible title or status")
     assets = {asset["name"]: asset for asset in final["assets"]}
     for name in ASSETS:
         if name not in assets or api.download(assets[name]) != candidates[name]:
