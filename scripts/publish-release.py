@@ -19,12 +19,12 @@ class GitHub:
         return json.loads(run("gh", "api", f"repos/{REPO}/commits/{tag}").stdout)["sha"]
 
     def existing_commit(self, tag):
-        result = run("gh", "api", f"repos/{REPO}/commits/{tag}", check=False)
+        result = run("gh", "api", f"repos/{REPO}/git/ref/tags/{tag}", check=False)
         if result.returncode:
             if b"HTTP 404" in result.stderr:
                 return None
             raise RuntimeError(result.stderr.decode())
-        return json.loads(result.stdout)["sha"]
+        return self.commit(tag)
 
     def release(self, tag):
         result = run("gh", "api", f"repos/{REPO}/releases/tags/{tag}", check=False)

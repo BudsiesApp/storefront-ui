@@ -31,6 +31,12 @@ class FakeGitHub:
 
 
 class PreviewTests(unittest.TestCase):
+    def test_missing_tag_uses_reference_endpoint(self):
+        result = subprocess.CompletedProcess([], 1, b'', b'gh: Not Found (HTTP 404)')
+        with patch.object(publisher, 'run', return_value=result) as call:
+            self.assertIsNone(publisher.GitHub().existing_commit('package-preview-' + 'a' * 64))
+            self.assertIn('/git/ref/tags/', call.call_args.args[2])
+
     def test_selected_commit_preparation(self):
         sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
         source = {'shared': sha, 'vue': sha}
