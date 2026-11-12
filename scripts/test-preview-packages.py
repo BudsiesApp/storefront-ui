@@ -1,9 +1,12 @@
 import importlib.util
+import contextlib
+import io
 import json
 import subprocess
 import tarfile
 import tempfile
 import unittest
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
@@ -31,6 +34,47 @@ class FakeGitHub:
 
 
 class PreviewTests(unittest.TestCase):
+    def test_branch_advancement_and_invalid_ref(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            remote, work = root / 'remote.git', root / 'work'
+            subprocess.run(['git', 'init', '--bare', str(remote)], check=True, capture_output=True)
+            subprocess.run(['git', 'init', '-b', 'feature', str(work)], check=True, capture_output=True)
+            def git(*args):
+                return subprocess.check_output(['git', '-C', str(work), *args], stderr=subprocess.PIPE).decode().strip()
+            git('config', 'user.email', 'test@example.invalid')
+            git('config', 'user.name', 'Preview Test')
+            git('remote', 'add', 'origin', str(remote))
+            (work / 'source').write_text('first')
+            git('add', 'source'); git('commit', '-m', 'first'); git('push', 'origin', 'feature')
+            with patch.object(preview, 'ROOT', work):
+                first = preview.resolve('feature')
+                (work / 'source').write_text('second')
+                git('add', 'source'); git('commit', '-m', 'second'); git('push', 'origin', 'feature')
+                second = preview.resolve('feature')
+                self.assertNotEqual(first, second)
+                self.assertEqual(preview.resolve(first), first)
+                with self.assertRaises(subprocess.CalledProcessError): preview.resolve('not-found')
+
+    def test_command_returns_complete_handoff(self):
+        sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+        package = preview.load('package-release')
+        fake = FakeGitHub()
+        stdout = io.StringIO()
+        def fake_git(*args): return '' if args[0] == 'status' else sha
+        def fake_load(name): return package if name == 'package-release' else publisher
+        with patch.object(sys, 'argv', ['preview-packages.py', '--shared-ref', sha, '--vue-ref', sha]), \
+             patch.object(preview, 'git', fake_git), patch.object(preview, 'resolve', return_value=sha), \
+             patch.object(preview, 'load', fake_load), patch.object(publisher, 'GitHub', return_value=fake), \
+             contextlib.redirect_stdout(stdout):
+            preview.main()
+        result = json.loads(stdout.getvalue())
+        self.assertEqual(result['identity']['sources'], {'shared': sha, 'vue': sha})
+        self.assertEqual(len(result['packages']), 2)
+        self.assertTrue(all(result['releaseTag'] in package['url'] for package in result['packages']))
+        self.assertTrue(result['manifestUrl'].endswith('/release-manifest.json'))
+        self.assertTrue(result['checksumsUrl'].endswith('/SHA256SUMS'))
+
     def test_missing_tag_uses_reference_endpoint(self):
         result = subprocess.CompletedProcess([], 1, b'', b'gh: Not Found (HTTP 404)')
         with patch.object(publisher, 'run', return_value=result) as call:
@@ -39,15 +83,15 @@ class PreviewTests(unittest.TestCase):
 
     def test_selected_commit_preparation(self):
         sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
-        source = {'shared': sha, 'vue': sha}
+        source = {'shared': '3ff374628936ba579a9bbb2a634c6c3ce9db6ac5', 'vue': sha}
         value = preview.identity(sha, source, {'python': 'test', 'zlib': 'test'})
         tag = preview.tag_for(value)
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp)
-            preview.load('package-release').prepare(path, tag, {'sharedRevision': sha, 'vueRevision': sha}, value)
+            preview.load('package-release').prepare(path, tag, {'sharedRevision': source['shared'], 'vueRevision': sha}, value)
             metadata = json.loads((path / 'release-manifest.json').read_text())
             self.assertEqual(metadata['previewIdentity'], value)
-            self.assertTrue(all(package['sourceRevision'] == sha for package in metadata['packages']))
+            self.assertEqual([package['sourceRevision'] for package in metadata['packages']], [source['shared'], sha])
             with tarfile.open(path / 'storefront-ui-vue.tgz') as archive:
                 manifest = json.load(archive.extractfile('package/package.json'))
             self.assertEqual(manifest['dependencies']['@storefront-ui/shared'],

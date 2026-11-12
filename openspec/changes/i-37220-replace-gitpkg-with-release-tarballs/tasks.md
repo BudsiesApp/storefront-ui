@@ -15,10 +15,10 @@
 
 ## 3. On-demand previews
 
-- [ ] 3.1 Add the local preview command's independent ref/full-commit inputs and visible unchanged-companion defaults; verify focused tests resolve each distinct selected remote ref once, preserve its immutable SHA after branch movement and fail clearly without fallback on unresolvable input.
-- [ ] 3.2 Refactor preparation to accept resolved preview sources without tracked-config mutation; verify generic archive/source tests exercise arbitrary selected revisions and both package selections independently while dedicated initial-pin regression assertions remain unchanged and the explicit release workflow still passes.
-- [ ] 3.3 Add canonical source/packaging/toolchain identity, command-managed `package-preview-*` prerelease creation at the exact pushed packaging SHA and non-clobber reuse/completion; verify focused tests cover equal keys via different ref spellings, changed source/packaging/toolchain keys, conflicts, partial publication and create/upload races without overwrite or incomplete-success reporting.
-- [ ] 3.4 Return a complete exact paired URL/provenance/checksum handoff and document runnable setup, defaults, feature iteration, post-merge selection and approval scope; verify output/CLI tests prove Vue's archived shared URL equals the returned shared URL, no manual tags/config/test edits are needed, and existing `packages-*` workflows cannot be triggered by preview identities.
+- [x] 3.1 Add the local preview command's independent ref/full-commit inputs and visible unchanged-companion defaults; verify focused tests resolve each distinct selected remote ref once, preserve its immutable SHA after branch movement and fail clearly without fallback on unresolvable input.
+- [x] 3.2 Refactor preparation to accept resolved preview sources without tracked-config mutation; verify generic archive/source tests exercise arbitrary selected revisions and both package selections independently while dedicated initial-pin regression assertions remain unchanged and the explicit release workflow still passes.
+- [x] 3.3 Add canonical source/packaging/toolchain identity, command-managed `package-preview-*` prerelease creation at the exact pushed packaging SHA and non-clobber reuse/completion; verify focused tests cover equal keys via different ref spellings, changed source/packaging/toolchain keys, conflicts, partial publication and create/upload races without overwrite or incomplete-success reporting.
+- [x] 3.4 Return a complete exact paired URL/provenance/checksum handoff and document runnable setup, defaults, feature iteration, post-merge selection and approval scope; verify output/CLI tests prove Vue's archived shared URL equals the returned shared URL, no manual tags/config/test edits are needed, and existing `packages-*` workflows cannot be triggered by preview identities.
 
 ## Workflow follow-up
 
