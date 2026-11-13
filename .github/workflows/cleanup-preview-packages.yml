@@ -10,7 +10,7 @@ permissions:
 
 concurrency:
   group: preview-cleanup-${{ github.repository }}
-  cancel-in-progress: false
+  queue: max
 
 jobs:
   cleanup:
