@@ -44,6 +44,18 @@ class CleanupTests(unittest.TestCase):
     def test_repository_endpoint_has_no_trailing_slash(self):
         self.assertEqual(cleanup.GitHub().path(''), 'repos/' + cleanup.REPOSITORY)
 
+    def test_encoded_tag_and_deleted_branch_protection(self):
+        api = cleanup.GitHub()
+        with patch.object(api, 'call', return_value=None) as call:
+            self.assertIsNone(api.release('feature/a_aaaaaaa'))
+            self.assertTrue(call.call_args.args[1].endswith('/releases/tags/feature%2Fa_aaaaaaa'))
+            self.assertIsNone(api.protection_if_present('feature/a'))
+            with self.assertRaises(ValueError): api.protected('feature/a')
+        with patch.object(api, 'call', return_value={'protected': True}):
+            self.assertTrue(api.protection_if_present('feature/a'))
+        with patch.object(api, 'call', return_value={}):
+            with self.assertRaises(ValueError): api.protection_if_present('feature/a')
+
     def test_registry_commit_uses_parent_tree_and_fast_forward(self):
         api = cleanup.GitHub(); calls = []
         def call(method, path, data=None, **kwargs):
@@ -68,8 +80,10 @@ class CleanupTests(unittest.TestCase):
         self.assertEqual(cleanup.associations(('feature/a', SHA), (False, True), 'develop'), ({'feature/a'}, False))
         self.assertEqual(cleanup.associations(('refs/heads/feature/a', 'feature/b'), (False, False), 'develop'), ({'feature/a', 'feature/b'}, False))
         self.assertEqual(cleanup.associations(('feature/a', SHA), (False, False), 'develop'), ({'feature/a'}, True))
-        for ref in ('optimuspro', 'develop', 'master', 'main', 'release/v1', 'next', '0.10.9', SHA, 'refs/tags/example'):
+        for ref in ('optimuspro', 'develop', 'master', 'main', 'preview-cleanup/registry', SHA, 'refs/tags/example'):
             self.assertTrue(cleanup.associations((ref,), (False,), 'develop')[1])
+        for ref in ('release/v1', 'next', '0.10.9'):
+            self.assertEqual(cleanup.associations((ref,), (False,), 'develop'), ({ref}, False))
         self.assertEqual(cleanup.associations(('37220-example',), (False,), 'develop'), ({'37220-example'}, False))
 
     def test_registration_preserves_unknown_and_pins_commit_reuse(self):
@@ -145,6 +159,23 @@ class CleanupTests(unittest.TestCase):
         api = FakeGitHub(); registry = api.registry({'feature/a': (NOW - timedelta(days=31)).isoformat()})
         cleanup.cleanup(api, registry, NOW, api.save, dry_run=True)
         self.assertEqual(api.deletes, []); self.assertEqual(api.saves, 0)
+
+    def test_branch_named_preview_requires_matching_provenance(self):
+        api = FakeGitHub(); branch = 'feature/a'; api.tag = branch + '_' + SHA[:7]
+        api.identity = {'formatVersion': 1, 'repository': cleanup.REPOSITORY, 'packagingRevision': SHA, 'branch': branch,
+                        'sources': {'shared': SHA, 'vue': SHA}}
+        api.manifest = {'repository': cleanup.REPOSITORY, 'previewIdentity': api.identity, 'releaseTag': api.tag,
+                        'packagingRevision': SHA, 'packages': [{'name': '@storefront-ui/shared', 'sourceRevision': SHA},
+                                                               {'name': '@storefront-ui/vue', 'sourceRevision': SHA}]}
+        api.rel.update(tag_name=api.tag, name=api.tag)
+        registry = api.registry({branch: (NOW - timedelta(days=31)).isoformat()})
+        cleanup.validate_registry(registry)
+        api.identity['sources']['vue'] = 'b' * 40
+        cleanup.cleanup(api, registry, NOW, api.save)
+        self.assertEqual(api.deletes, [])
+        api.identity['sources']['vue'] = SHA
+        cleanup.cleanup(api, registry, NOW, api.save)
+        self.assertEqual(api.deletes, [123])
 
     def test_lock_contention_fails_without_stealing(self):
         api = cleanup.GitHub(); held = set(); calls = []

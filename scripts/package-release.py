@@ -9,6 +9,7 @@ import re
 import subprocess
 import tarfile
 from pathlib import Path
+from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parent.parent
 REPOSITORY = "BudsiesApp/storefront-ui"
@@ -58,7 +59,7 @@ def prepare(output, tag, config=None, identity=None):
             manifest["scripts"].pop("postinstall", None)
             manifest["scripts"].pop("prepublish", None)
             manifest["dependencies"]["@storefront-ui/shared"] = (
-                f"https://github.com/{REPOSITORY}/releases/download/{tag}/storefront-ui-shared.tgz")
+                f"https://github.com/{REPOSITORY}/releases/download/{quote(tag, safe='')}/storefront-ui-shared.tgz")
             files["package.json"] = ((json.dumps(manifest, indent=2) + "\n").encode(), files["package.json"][1])
         target = output / asset
         with target.open("wb") as raw, gzip.GzipFile(filename="", mode="wb", fileobj=raw, mtime=0) as gz:

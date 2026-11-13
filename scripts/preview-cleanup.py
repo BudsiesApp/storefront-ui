@@ -12,6 +12,7 @@ from urllib.parse import quote
 REPOSITORY = 'BudsiesApp/storefront-ui'
 LOCK = 'package-preview-cleanup-lock'
 REGISTRY = 'preview-cleanup/registry'
+BRANCH_PREVIEW_FORMAT = 1
 TAG = re.compile(r'package-preview-[0-9a-f]{64}\Z')
 SHA = re.compile(r'[0-9a-f]{40}\Z')
 RETENTION = timedelta(days=30)
@@ -34,15 +35,22 @@ class GitHub:
 
     def path(self, suffix): return f'repos/{REPOSITORY}' + ('/' + suffix if suffix else '')
     def repository(self): return self.call('GET', self.path(''))
-    def ref(self, tag): return self.call('GET', self.path('git/ref/tags/' + tag), missing=True)
-    def release(self, tag): return self.call('GET', self.path('releases/tags/' + tag), missing=True)
+    def ref(self, tag): return self.call('GET', self.path('git/ref/tags/' + quote(tag, safe='')), missing=True)
+    def release(self, tag): return self.call('GET', self.path('releases/tags/' + quote(tag, safe='')), missing=True)
     def branch(self, branch):
         return self.call('GET', self.path('git/ref/heads/' + quote(branch, safe='/')), missing=True) is not None
-    def protected(self, branch):
+    def protection_if_present(self, branch):
         info = self.call('GET', self.path('branches/' + quote(branch, safe='')), missing=True)
-        if info is None or type(info.get('protected')) is not bool:
+        if info is None:
+            return None
+        if type(info.get('protected')) is not bool:
             raise ValueError('branch protection could not be verified: ' + branch)
         return info['protected']
+    def protected(self, branch):
+        result = self.protection_if_present(branch)
+        if result is None:
+            raise ValueError('branch protection could not be verified: ' + branch)
+        return result
     def delete_release(self, release_id): self.call('DELETE', self.path(f'releases/{release_id}'))
     def asset(self, asset_id): return self.call('GET', self.path(f'releases/assets/{asset_id}'), binary=True)
 
@@ -94,10 +102,12 @@ def validate_registry(registry):
             registry.get('repository') != REPOSITORY or not isinstance(registry.get('previews'), dict)):
         raise ValueError('invalid preview cleanup registry')
     for tag, record in registry['previews'].items():
-        if (not TAG.fullmatch(tag) or not isinstance(record, dict) or type(record.get('release_id')) is not int or
+        if (not isinstance(record, dict) or type(record.get('release_id')) is not int or
                 type(record.get('pinned')) is not bool or not isinstance(record.get('branches'), dict) or
                 not SHA.fullmatch(record.get('packaging', ''))):
             raise ValueError('invalid preview cleanup record')
+        if not valid_tag(tag, record['packaging'], record['branches']):
+            raise ValueError('invalid preview tag')
         for branch, deleted in record['branches'].items():
             if not isinstance(branch, str) or not branch or branch.startswith('-'):
                 raise ValueError('invalid tracked branch')
@@ -109,9 +119,13 @@ def validate_registry(registry):
 
 
 def eligible_branch(branch, default_branch):
-    if branch in {default_branch, 'optimuspro', 'main', 'master', 'develop'}:
+    if branch in {default_branch, 'optimuspro', 'main', 'master', 'develop'} or branch.startswith('preview-cleanup/'):
         return False
-    return bool(re.fullmatch(r'(?:feature|feat)[/-].+|[0-9]+-[a-zA-Z].+', branch))
+    return True
+
+
+def valid_tag(tag, packaging, branches):
+    return bool(TAG.fullmatch(tag) or any(tag == f'{branch}_{packaging[:7]}' for branch in branches))
 
 
 def associations(refs, defaults, default_branch):
@@ -128,7 +142,7 @@ def associations(refs, defaults, default_branch):
             pinned = True
             continue
         subprocess.run(['git', 'check-ref-format', 'refs/heads/' + branch], check=True, stdout=subprocess.DEVNULL)
-        # Main, maintained and release branches are never eligible for cleanup.
+        # Maintained and internal branches are never eligible for cleanup.
         if not eligible_branch(branch, default_branch):
             pinned = True
         else:
@@ -144,7 +158,7 @@ def register(registry, tag, release, packaging, branches, pinned, existed):
     old = records.get(tag)
     if old is None and existed:
         return False
-    if (not TAG.fullmatch(tag) or not release or release.get('draft') is not False or release.get('prerelease') is not True or
+    if (not valid_tag(tag, packaging, branches) or not release or release.get('draft') is not False or release.get('prerelease') is not True or
             release.get('tag_name') != tag or release.get('name') != tag or type(release.get('id')) is not int):
         raise ValueError('unexpected preview release')
     if old is None:
@@ -183,8 +197,18 @@ def valid_release(api, tag, record):
     canonical = json.dumps(identity, sort_keys=True, separators=(',', ':')).encode()
     if (not isinstance(identity, dict) or identity.get('repository') != REPOSITORY or
             identity.get('packagingRevision') != record['packaging'] or manifest.get('releaseTag') != tag or
-            manifest.get('packagingRevision') != record['packaging'] or
-            'package-preview-' + hashlib.sha256(canonical).hexdigest() != tag):
+            manifest.get('packagingRevision') != record['packaging']):
+        return None
+    if TAG.fullmatch(tag):
+        if 'package-preview-' + hashlib.sha256(canonical).hexdigest() != tag:
+            return None
+    elif (identity.get('branch') not in record['branches'] or
+          tag != f"{identity['branch']}_{record['packaging'][:7]}" or
+          identity.get('formatVersion') != 1 or
+          identity.get('sources') != {'shared': record['packaging'], 'vue': record['packaging']} or
+          manifest.get('repository') != REPOSITORY or
+          {p.get('name'): p.get('sourceRevision') for p in manifest.get('packages', [])} !=
+          {'@storefront-ui/shared': record['packaging'], '@storefront-ui/vue': record['packaging']}):
         return None
     return release
 

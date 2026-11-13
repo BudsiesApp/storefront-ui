@@ -1,0 +1,53 @@
+name: Publish branch preview
+
+on:
+  push:
+    branches:
+      - '**'
+      - '!optimuspro'
+      - '!main'
+      - '!master'
+      - '!develop'
+      - '!preview-cleanup/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: preview-cleanup-${{ github.repository }}
+  queue: max
+
+jobs:
+  publish:
+    if: github.ref_name != github.event.repository.default_branch
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.11'
+      - id: cleanup_support
+        run: |
+          if git show refs/remotes/origin/optimuspro:scripts/preview-cleanup.py | grep -Fx 'BRANCH_PREVIEW_FORMAT = 1' > /dev/null; then
+            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'enabled=false' >> "$GITHUB_OUTPUT"
+            echo 'Branch previews are disabled until cleanup support reaches optimuspro.'
+          fi
+      - run: python scripts/test-package-release.py
+      - run: python scripts/test-preview-packages.py
+      - run: python scripts/test-preview-cleanup.py
+      - run: python scripts/test-branch-preview.py
+      - if: steps.cleanup_support.outputs.enabled == 'true'
+        run: |
+          python scripts/publish-branch-preview.py > preview-handoff.json
+          cat preview-handoff.json
+          printf '### Package preview\n\n' >> "$GITHUB_STEP_SUMMARY"
+          jq -r '"- Release: `\(.releaseTag)`\n- Source commit: `\(.identity.packagingRevision)`\n- Cleanup tracked: \(.cleanupTracked)"' preview-handoff.json >> "$GITHUB_STEP_SUMMARY"
+          jq -r '.packages[] | "- [\(.name)](\(.url))"' preview-handoff.json >> "$GITHUB_STEP_SUMMARY"
+          jq -r '"- [Manifest](\(.manifestUrl))\n- [Checksums](\(.checksumsUrl))"' preview-handoff.json >> "$GITHUB_STEP_SUMMARY"
+        env:
+          GH_TOKEN: ${{ github.token }}

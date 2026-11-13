@@ -100,7 +100,7 @@ The on-demand command SHALL publish prepared sources without per-iteration track
 Each preview SHALL identify the repository, resolved shared/Vue source commits and packaging commit. A new source or packaging identity MUST use a distinct public release identity. Success MUST return both exact anonymous package URLs and provenance/checksum locations only for a complete verified matching asset set, with Vue's shared URL exactly equal to the returned shared asset.
 
 #### Scenario: Matching preview is reused
-- **WHEN** the same resolved source and complete packaging identity, including the recorded toolchain, is requested again through the same or a different ref spelling
+- **WHEN** the same on-demand resolved source and complete packaging identity, including the recorded toolchain, is requested again through the same or a different ref spelling
 - **THEN** a complete matching preview is reused without replacing its assets, and the same package and provenance/checksum URLs are returned
 
 #### Scenario: Conflict or interrupted publication
@@ -111,8 +111,31 @@ Each preview SHALL identify the repository, resolved shared/Vue source commits a
 - **WHEN** a selected source or packaging commit differs, including a new merge commit with similar file contents
 - **THEN** the command uses a distinct preview identity and retains previously consumed URLs except when an eligible feature preview is later cleaned up
 
+### Requirement: Automatic branch preview publication
+Pushes to non-maintained branches containing the preview workflow SHALL publish a public prerelease titled and tagged `<branch>_<first seven characters of the triggering commit SHA>`, with both package sources and packaging revision set to the full exact pushed commit. Publication MUST wait until compatible cleanup support is on `optimuspro` and MUST NOT update or deploy consumers.
+
+#### Scenario: Maintained and internal branches
+- **WHEN** a push targets the default, `optimuspro`, `main`, `master`, `develop` or `preview-cleanup/` branch
+- **THEN** no branch preview is published
+
+#### Scenario: Publication handoff
+- **WHEN** publication succeeds
+- **THEN** the workflow summary identifies the release, source commit, tracking state, package URLs, manifest and checksums
+
+#### Scenario: Branch advances rapidly
+- **WHEN** two commits are pushed to a branch with the workflow
+- **THEN** each publication uses its own triggering commit rather than the later branch head, subject to GitHub Actions trigger and concurrency limits
+
+#### Scenario: Branch name contains a slash
+- **WHEN** a branch-named preview is published
+- **THEN** the release tag preserves the branch name and asset URLs encode the tag as a single URL path component; the Vue archive references the matching shared asset
+
+#### Scenario: Existing publication conflicts
+- **WHEN** a branch tag, release status, title, provenance or asset conflicts
+- **THEN** publication fails without replacing existing assets or repointing the tag
+
 ### Requirement: Feature-preview cleanup
-New preview releases SHALL record feature-branch associations outside immutable assets. Scheduled cleanup MAY delete a trusted tracked preview only after every associated branch has been observed absent for at least 30 days. Publication, tracking and cleanup MUST serialize; errors MUST fail safe. Deleting a preview makes its URLs unavailable but MUST NOT delete its Git tag.
+New preview releases SHALL record eligible branch associations outside immutable assets. Scheduled cleanup MAY delete a trusted tracked preview only after every associated branch has been observed absent for at least 30 days. Publication, tracking and cleanup MUST serialize; errors MUST fail safe. Deleting a preview makes its URLs unavailable but MUST NOT delete its Git tag. A branch already absent when an automatic preview is published MUST be pinned because its protection cannot be verified.
 
 #### Scenario: Exclusions and reuse
 - **WHEN** a release is stable, untracked, commit-only, protected or associated with a maintained branch

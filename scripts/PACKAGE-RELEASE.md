@@ -33,7 +33,16 @@ prefix. The manifest records the full source and packaging SHA. Older stable,
 explicit-tag and preview releases retain their existing names and assets.
 Publication does not update consumers or deploy applications.
 
-For feature testing, first check out and push the committed publishing tools,
+For feature testing, pushes to non-maintained branches containing the branch
+preview workflow publish a public prerelease named `<branch>_<first-seven-SHA>`.
+Both packages use the exact pushed commit. Find the URLs and checksums in the
+workflow summary; URL-encode `/` in branch names when constructing asset URLs.
+The default, maintained and `preview-cleanup/` branches are excluded. Existing
+branches must first include the workflow, for example by merging `optimuspro`.
+Publication does not change consumers or deploy applications.
+Pushes made with a workflow's `GITHUB_TOKEN` do not trigger push workflows.
+
+For an on-demand preview, first check out and push the committed publishing tools,
 and push the source branch or commit to this repository's `origin`.
 Run `python3 scripts/preview-packages.py --vue-ref <feature-branch>` or use
 `--shared-ref <feature-branch>` independently. Omitted refs default to the
@@ -45,19 +54,20 @@ both UI URLs and the lock. For another commit, rerun against the advanced
 branch; after merge, pass the actual merged SHA. No publishing configuration
 edits or manual tag are needed. Previews are public and immutable.
 
-New feature-branch previews are tracked outside their immutable assets. A
+New branch previews are tracked outside their immutable assets. A
 scheduled workflow checks every recorded branch; only after all are observed
 deleted for 30 days may it delete the prerelease and its assets. The Git tag
 is retained, but the preview download URLs stop working. Reusing a preview
 adds each selected feature branch to its associations. An explicitly selected
-commit, tag, maintained/release branch, or protected branch permanently pins
+commit, tag, maintained branch, or protected branch permanently pins
 the preview; the omitted historical companion does not. Older previews whose
 association history is unknown are never adopted or deleted. The registry is
 stored on the `preview-cleanup/registry` branch, with no changes to release
 assets. The scheduler lives on the repository default branch and checks out
 `optimuspro`; manual workflow dispatch runs a read-only dry run.
-Only `feature/`, `feature-`, `feat/`, `feat-`, or ticket-number-and-hyphen
-branch names qualify; other ambiguous branch names permanently pin the preview.
+Any non-maintained, non-internal branch qualifies; protected branches remain
+pinned. A branch already absent at publication is pinned because its protection
+cannot be checked. Existing pinned previews remain pinned when these rules change.
 
 The 30-day clock starts when deletion is detected, not when a preview is made.
 An observed reappearance resets that branch's clock. The final branch check is
@@ -70,6 +80,14 @@ fails rather than stealing the lock. A failed or interrupted operation leaves
 the lock in place: inspect the workflow/publisher and registry, confirm no
 operation is active and that any partially published preview is safe, then
 resolve the lock with an authorized maintainer. Never automatically clear it.
+The branch publication and default-branch scheduler workflows also share an
+Actions concurrency group with `queue: max`. Update the scheduler workflow on
+the default branch before enabling branch previews, because scheduled workflows
+run from that branch. Branch previews are skipped until cleanup support reaches
+`optimuspro`; the old cleanup cannot read their registry entries.
+GitHub queues at most 100 pending runs in a concurrency group; additional runs
+are canceled and must be rerun. The local preview command is outside that queue
+and still fails on lock contention rather than taking over an active lock.
 
 For the separate explicit-release workflow, update the source SHA(s) and
 baseline test assertions, commit, and run the tests. Once authorized, push a new unused
