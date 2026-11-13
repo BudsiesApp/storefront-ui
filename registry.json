@@ -1,0 +1,14 @@
+{
+  "previews": {
+    "37220-preview-verification/branch_23af8e8": {
+      "branches": {
+        "37220-preview-verification/branch": null
+      },
+      "packaging": "23af8e86d0f37c201ea49fe5128f6d1613fd6167",
+      "pinned": false,
+      "release_id": 443663149
+    }
+  },
+  "repository": "BudsiesApp/storefront-ui",
+  "version": 1
+}
