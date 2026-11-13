@@ -27,7 +27,8 @@ class FakeGitHub:
 
     def existing_commit(self, tag): return self.tag_sha
     def release(self, tag):
-        return {'assets': [{'name': name, 'id': name} for name in self.assets]} if self.exists else None
+        return {'draft': False, 'prerelease': True, 'name': tag,
+                'assets': [{'name': name, 'id': name} for name in self.assets]} if self.exists else None
     def download(self, asset): return self.assets[asset['id']]
     def create(self, tag, target): self.writes.append('create'); self.exists = True; self.tag_sha = target
     def upload(self, tag, path): self.writes.append(path.name); self.assets[path.name] = path.read_bytes()
@@ -155,6 +156,10 @@ class PreviewTests(unittest.TestCase):
             for name in publisher.ASSETS: (directory / name).write_bytes(name.encode())
             (directory / 'release-manifest.json').write_text(json.dumps({'releaseTag': tag, 'packagingRevision': sha}))
             expected = {name: (directory / name).read_bytes() for name in publisher.ASSETS}
+            incompatible = FakeGitHub({}, True, sha)
+            with patch.object(incompatible, 'release', return_value={'draft': False, 'prerelease': False, 'name': tag, 'assets': []}):
+                with self.assertRaises(ValueError): publisher.publish(incompatible, tag, directory, preview=True)
+            self.assertEqual(incompatible.writes, [])
             for initial, exists, oldsha in (({}, False, None), (expected, True, sha),
                                             ({publisher.ASSETS[0]: expected[publisher.ASSETS[0]]}, True, sha)):
                 fake = FakeGitHub(initial, exists, oldsha)

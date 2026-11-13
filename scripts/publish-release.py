@@ -6,6 +6,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 REPO = "BudsiesApp/storefront-ui"
 ASSETS = ("storefront-ui-shared.tgz", "storefront-ui-vue.tgz", "release-manifest.json", "SHA256SUMS")
@@ -17,10 +18,10 @@ def run(*args, check=True):
 
 class GitHub:
     def commit(self, tag):
-        return json.loads(run("gh", "api", f"repos/{REPO}/commits/{tag}").stdout)["sha"]
+        return json.loads(run("gh", "api", f"repos/{REPO}/commits/{quote(tag, safe='')}").stdout)["sha"]
 
     def existing_commit(self, tag):
-        result = run("gh", "api", f"repos/{REPO}/git/ref/tags/{tag}", check=False)
+        result = run("gh", "api", f"repos/{REPO}/git/ref/tags/{quote(tag, safe='')}", check=False)
         if result.returncode:
             if b"HTTP 404" in result.stderr:
                 return None
@@ -28,7 +29,7 @@ class GitHub:
         return self.commit(tag)
 
     def release(self, tag):
-        result = run("gh", "api", f"repos/{REPO}/releases/tags/{tag}", check=False)
+        result = run("gh", "api", f"repos/{REPO}/releases/tags/{quote(tag, safe='')}", check=False)
         if result.returncode:
             if b"HTTP 404" in result.stderr:
                 return None
@@ -67,6 +68,8 @@ def publish(api, tag, directory, preview=False, stable=False):
         raise ValueError("stable tag and sources must identify the full packaging commit")
     if release is not None and stable and (release.get("draft") or release.get("prerelease") or release.get("name") != tag):
         raise ValueError("existing stable release has incompatible title or status")
+    if release is not None and preview and (release.get("draft") is not False or release.get("prerelease") is not True or release.get("name") != tag):
+        raise ValueError("existing preview release has incompatible title or status")
     if preview or stable:
         if api.commit(metadata["packagingRevision"]) != metadata["packagingRevision"]:
             raise ValueError("packaging commit is not available on GitHub")
@@ -96,6 +99,8 @@ def publish(api, tag, directory, preview=False, stable=False):
     final = api.release(tag)
     if stable and (final.get("draft") or final.get("prerelease") or final.get("name") != tag):
         raise ValueError("published stable release has incompatible title or status")
+    if preview and (final.get("draft") is not False or final.get("prerelease") is not True or final.get("name") != tag):
+        raise ValueError("published preview release has incompatible title or status")
     assets = {asset["name"]: asset for asset in final["assets"]}
     for name in ASSETS:
         if name not in assets or api.download(assets[name]) != candidates[name]:
